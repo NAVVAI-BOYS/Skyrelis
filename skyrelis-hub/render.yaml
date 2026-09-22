@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: skyrelis-check
+    runtime: python
+    plan: starter
+    rootDir: skyrelis-check
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /healthz
+    envVars:
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SHOW_CONCEPT_BANNER
+        value: "true"
+    disk:
+      name: check-data
+      mountPath: /opt/render/project/src/skyrelis-check/data
+      sizeGB: 1

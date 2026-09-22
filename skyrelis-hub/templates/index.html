@@ -1,2433 +1,718 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skyrelis Agentic Security Hub</title>
+<title>Agent Control Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
 <style>
-/* ------------------------------------------------------------------
-   TOKENS
-   Values marked [spec] are taken verbatim from section 10 of the
-   Skyrelis web app specification v3.
-   Values marked [lift] are legibility variants of a [spec] colour,
-   used only for text, lines and chart strokes on the dark ground.
-   They are stated as lifts, not passed off as brand colours.
------------------------------------------------------------------- */
+/* ============================================================
+   AGENT CONTROL CHECK — Skyrelis
+   Dark-first. Brand values from the Skyrelis spec are marked.
+   Values marked LIFT are legibility variants for dark ground,
+   stated as lifts rather than passed off as brand colours.
+   ============================================================ */
 :root{
-  --bg:#0A0F1E;          /* [spec] page background */
-  --card:#1A2035;        /* [spec] card background */
-  --navy:#1F3A6E;        /* [spec] primary navy */
-  --teal:#0F6E56;        /* [spec] accent teal */
-  --green:#1A6B3C;       /* [spec] success */
-  --amber:#854F0B;       /* [spec] warning */
-  --red:#993C1D;         /* [spec] alert */
-  --ink:#FFFFFF;         /* [spec] text primary */
-  --mute:#94A3B8;        /* [spec] text secondary */
-
-  --teal-l:#35D6A4;      /* [lift] of --teal */
-  --navy-l:#6C9CF5;      /* [lift] of --navy */
-  --green-l:#3FD07A;     /* [lift] of --green */
-  --amber-l:#E9A83A;     /* [lift] of --amber */
-  --red-l:#F2744C;       /* [lift] of --red */
-
-  --card-2:#131A2B;
-  --card-3:#0E1424;
-  --line:rgba(148,163,184,.20);
+  --bg:#0A0F1E;            /* brand: page background */
+  --surface:#141B2D;
+  --surface-2:#1B2438;
+  --sunk:#0C1220;
+  --line:rgba(148,163,184,.18);
   --line-2:rgba(148,163,184,.34);
-  --sans:'Inter','Inter var',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;
-  --wrap:1080px;
-  --r:14px;
+  --ink:#F2F6FC;
+  --ink-2:#94A3B8;         /* brand: text secondary */
+  --navy:#3A63B0;          /* LIFT of brand navy #1F3A6E */
+  --teal:#35D6A4;          /* LIFT of brand teal #0F6E56 */
+  --teal-ink:#04141B;
+  --amber:#E9A83A;         /* LIFT of brand warning #854F0B */
+  --red:#F2744C;           /* LIFT of brand alert #993C1D */
+  --glow:rgba(53,214,164,.16);
+  --shadow:0 14px 40px rgba(2,6,16,.55);
+
+  --f-display:'Archivo','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --f-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#F3F6FB;
+    --surface:#FFFFFF;
+    --surface-2:#EAEFF7;
+    --sunk:#E4EAF4;
+    --line:rgba(31,58,110,.16);
+    --line-2:rgba(31,58,110,.30);
+    --ink:#0B1424;
+    --ink-2:#55657F;
+    --navy:#1F3A6E;        /* brand: primary navy */
+    --teal:#0B6A52;        /* brand teal #0F6E56, a shade deeper for contrast on white */
+    --teal-ink:#FFFFFF;
+    --amber:#8A5209;
+    --red:#9A3B1C;
+    --glow:rgba(15,110,86,.10);
+    --shadow:0 12px 34px rgba(16,32,64,.12);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F3F6FB;
+  --surface:#FFFFFF;
+  --surface-2:#EAEFF7;
+  --sunk:#E4EAF4;
+  --line:rgba(31,58,110,.16);
+  --line-2:rgba(31,58,110,.30);
+  --ink:#0B1424;
+  --ink-2:#55657F;
+  --navy:#1F3A6E;
+  --teal:#0B6A52;
+  --teal-ink:#FFFFFF;
+  --amber:#8A5209;
+  --red:#9A3B1C;
+  --glow:rgba(15,110,86,.10);
+  --shadow:0 12px 34px rgba(16,32,64,.12);
+}
+
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
 body{
-  background:var(--bg);color:var(--ink);font-family:var(--sans);
-  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--f-body);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
 }
-img,svg{max-width:100%}
-button{font:inherit;color:inherit}
-h1,h2,h3,h4{margin:0;line-height:1.15;letter-spacing:-.02em;font-weight:800}
-h1{font-size:clamp(30px,5.2vw,50px)}
-h2{font-size:clamp(23px,3.4vw,32px)}
-h3{font-size:clamp(18px,2.4vw,21px)}
-h4{font-size:16px;letter-spacing:-.01em}
-p{margin:0 0 12px}
-ul{margin:0;padding-left:18px}
-li{margin:0 0 7px}
-a{color:var(--teal-l)}
-.wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px}
-.narrow{max-width:860px}
-.mute{color:var(--mute)}
-.hide{display:none !important}
-.center{text-align:center}
-.nowrap{white-space:nowrap}
+h1,h2,h3{margin:0;font-family:var(--f-display);font-weight:800;letter-spacing:-.022em;line-height:1.12;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:4px}
 
-/* --- utility type --- */
-.kick{
-  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--mute);margin:0 0 8px;display:block;
-}
-.kick-t{color:var(--teal-l)}
-.lead{font-size:clamp(16px,2vw,18px);color:#CBD5E1}
-.small{font-size:13.5px}
-.tiny{font-size:12.5px}
+.shell{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:0}
 
-/* --- top bar --- */
-.topbar{
-  position:sticky;top:0;z-index:60;background:rgba(10,15,30,.92);
-  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
-}
-.topbar .in{display:flex;align-items:center;gap:14px;height:60px}
-.mark{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.03em;font-size:18px}
-.mark .glyph{
-  width:22px;height:22px;border-radius:6px;flex:none;
-  background:linear-gradient(150deg,var(--teal-l),var(--navy-l));
-  position:relative;
-}
-.mark .glyph:after{
-  content:"";position:absolute;inset:6px;border-radius:2px;background:var(--bg);
-}
-.mark small{
-  font-weight:600;font-size:11px;color:var(--mute);letter-spacing:.12em;
-  text-transform:uppercase;font-family:var(--mono);
-}
-.spacer{flex:1}
-.demo-tag{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
-  border:1px solid var(--line-2);color:var(--mute);padding:5px 9px;border-radius:999px;
-}
-.linkbtn{
-  background:none;border:1px solid var(--line-2);color:var(--ink);
-  padding:7px 13px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;
-}
-.linkbtn:hover{border-color:var(--teal-l);color:var(--teal-l)}
+/* ---------- masthead ---------- */
+.mast{border-bottom:1px solid var(--line);background:var(--bg)}
+.mast .in{display:flex;align-items:center;gap:12px;height:58px;max-width:1120px;margin:0 auto;padding-inline:20px}
+.brand{display:flex;align-items:center;gap:9px;font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:-.035em}
+.dot9{width:20px;height:20px;border-radius:6px;flex:none;background:linear-gradient(145deg,var(--teal),var(--navy));position:relative}
+.dot9::after{content:"";position:absolute;inset:6px;border-radius:2px;background:var(--bg)}
+.brand em{font-style:normal;font-family:var(--f-mono);font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.grow{flex:1}
+.stamp{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border:1px solid var(--line-2);border-radius:99px;padding:4px 10px;white-space:nowrap}
 
-/* --- buttons --- */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:9px;
-  background:linear-gradient(135deg,var(--teal-l),#1FA9C9);
-  color:#04121B;border:0;border-radius:11px;padding:14px 22px;
-  font-weight:800;font-size:15.5px;cursor:pointer;letter-spacing:-.01em;
-}
-.btn:hover{filter:brightness(1.08)}
-.btn.ghost{background:none;border:1px solid var(--line-2);color:var(--ink)}
-.btn.ghost:hover{border-color:var(--teal-l);color:var(--teal-l);filter:none}
-.btn.sm{padding:10px 15px;font-size:13.5px;border-radius:9px}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btnrow{display:flex;flex-wrap:wrap;gap:10px}
-
-/* --- cards --- */
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
-.card.flat{background:var(--card-2)}
-.card.deep{background:var(--card-3)}
-.grid{display:grid;gap:14px}
-.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.gauto{grid-template-columns:repeat(auto-fit,minmax(178px,1fr))}
-@media(max-width:820px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.g2,.g3,.g4{grid-template-columns:1fr}}
-
-/* --- pills --- */
-.pill{
-  display:inline-flex;align-items:center;gap:6px;border-radius:999px;
-  padding:4px 11px;font-size:11.5px;font-weight:700;font-family:var(--mono);
-  letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;
-}
-.p-green{background:rgba(26,107,60,.28);color:var(--green-l);border-color:rgba(63,208,122,.4)}
-.p-navy{background:rgba(31,58,110,.4);color:var(--navy-l);border-color:rgba(108,156,245,.4)}
-.p-amber{background:rgba(133,79,11,.3);color:var(--amber-l);border-color:rgba(233,168,58,.42)}
-.p-red{background:rgba(153,60,29,.3);color:var(--red-l);border-color:rgba(242,116,76,.44)}
-.p-teal{background:rgba(15,110,86,.3);color:var(--teal-l);border-color:rgba(53,214,164,.4)}
-.p-grey{background:rgba(148,163,184,.14);color:var(--mute);border-color:var(--line-2)}
-
-/* ================= HOME ================= */
-.hero{padding:34px 0 10px;position:relative}
-.hero h1{max-width:19ch;font-size:clamp(28px,4.4vw,44px)}
-.hero .lead{max-width:56ch;margin-top:14px}
-.valuecards{margin:22px 0 0}
-.vc{
-  background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;
-}
-.vc b{display:block;font-size:14.5px;margin-bottom:3px}
-.vc span{font-size:12.5px;color:var(--mute);line-height:1.45}
-
-/* signature: the runtime gate */
-.gatebox{
-  margin:26px 0 0;background:linear-gradient(180deg,#101728,#0B1120);
-  border:1px solid var(--line);border-radius:16px;overflow:hidden;
-}
-.gatehead{
-  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
-  padding:13px 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);
-}
-.gatehead b{font-size:14px}
-.gate-toggle{display:flex;gap:0;border:1px solid var(--line-2);border-radius:999px;overflow:hidden}
-.gate-toggle button{
-  background:none;border:0;padding:7px 13px;font-size:12px;font-weight:700;
-  color:var(--mute);cursor:pointer;font-family:var(--mono);letter-spacing:.04em;
-}
-.gate-toggle button.on{background:var(--teal-l);color:#04121B}
-.gatestage{padding:16px;display:grid;grid-template-columns:1fr 138px 1fr;gap:30px;align-items:start;position:relative}
-.lane-h{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
-  color:var(--mute);margin-bottom:9px;
-}
-.act{
-  display:flex;align-items:center;gap:8px;background:var(--card-3);
-  border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:7px;
-  font-family:var(--mono);font-size:12px;transition:border-color .3s,opacity .3s;
-}
-.act .dot{width:7px;height:7px;border-radius:50%;background:var(--mute);flex:none}
-.act.live{border-color:rgba(53,214,164,.5)}
-.act.live .dot{background:var(--teal-l)}
-.verdict-line{
-  display:flex;align-items:center;gap:8px;border-radius:9px;padding:8px 10px;margin-bottom:7px;
-  font-family:var(--mono);font-size:12px;border:1px solid var(--line);background:var(--card-3);
-}
-.verdict-line.allow{border-color:rgba(63,208,122,.45);color:var(--green-l)}
-.verdict-line.hold{border-color:rgba(233,168,58,.45);color:var(--amber-l)}
-.verdict-line.block{border-color:rgba(242,116,76,.45);color:var(--red-l)}
-.gatecore{
-  border:1px dashed rgba(53,214,164,.55);border-radius:12px;padding:12px 8px;text-align:center;
-  background:rgba(15,110,86,.12);position:relative;
-}
-.gatecore:before,.gatecore:after{
-  content:"";position:absolute;top:50%;width:30px;border-top:1px dashed rgba(53,214,164,.55);
-}
-.gatecore:before{left:-30px}
-.gatecore:after{right:-30px}
-.gatecore i{
-  position:absolute;top:50%;transform:translateY(-50%);width:0;height:0;
-  border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid var(--teal-l);
-}
-.gatecore i.tipL{left:-9px}
-.gatecore i.tipR{right:-9px}
-.gatecore b{display:block;font-size:12.5px;letter-spacing:-.01em}
-.gatecore span{font-family:var(--mono);font-size:10.5px;color:var(--mute);display:block;margin-top:5px;line-height:1.4}
-.gatefoot{
-  padding:12px 16px;border-top:1px solid var(--line);background:rgba(255,255,255,.02);
-  font-size:13px;color:#CBD5E1;
-}
-.gatefoot b{color:var(--ink)}
-@media(max-width:700px){
-  .gatestage{grid-template-columns:1fr;gap:14px}
-  .gatecore:before,.gatecore:after,.gatecore i{display:none}
+/* ---------- layout ---------- */
+.stage{display:grid;gap:26px;padding-block:26px 56px}
+@media (min-width:900px){
+  .stage{grid-template-columns:minmax(0,384px) minmax(0,1fr);gap:34px;align-items:start}
+  .mapcol{position:sticky;top:20px}
 }
 
-/* lane picker */
-.lanecards{margin-top:18px}
-.lanecard{
-  text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:18px;cursor:pointer;transition:border-color .18s,transform .18s;width:100%;
-}
-.lanecard:hover{border-color:var(--teal-l);transform:translateY(-2px)}
-.lanecard b{display:block;font-size:17px;margin:8px 0 6px;letter-spacing:-.02em}
-.lanecard .ex{font-size:12.5px;color:var(--mute);margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
-.lanecard .go{color:var(--teal-l);font-weight:700;font-size:13.5px;margin-top:12px;display:block}
-.startpill{
-  display:inline-flex;align-items:center;gap:8px;margin-top:14px;
-  background:linear-gradient(135deg,var(--teal-l),#1FA9C9);color:#04121B;
-  border-radius:10px;padding:11px 18px;font-weight:800;font-size:14.5px;letter-spacing:-.01em;
-}
-.lanecard:hover .startpill{filter:brightness(1.08)}
-.startrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin:26px 0 12px}
-.startrow h2{font-size:clamp(20px,2.8vw,26px)}
-.steps{display:grid;gap:8px;grid-template-columns:1fr 1fr}
-@media(max-width:700px){.steps{grid-template-columns:1fr}}
-.step{
-  display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);
-  border-radius:10px;background:var(--card-2);padding:11px 13px;
-}
-.step .sn{
-  font-family:var(--mono);font-size:11px;font-weight:700;color:#04121B;background:var(--teal-l);
-  border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;
-}
-.step b{display:block;font-size:14px}
-.step span{font-size:12.5px;color:var(--mute);line-height:1.4}
-@media(max-width:560px){
-  .hero{padding:20px 0 6px}
-  .hero h1{font-size:26px;max-width:none}
-  .hero .lead{font-size:15px;margin-top:10px}
-  .factstrip{gap:6px;margin-top:14px}
-  .fact{padding:5px 10px;font-size:11.5px}
-  .startrow{margin:18px 0 10px;gap:4px}
-  .startrow h2{font-size:19px}
-  .lanecard{padding:15px}
-  .lanecard b{font-size:15.5px;margin:6px 0 5px}
-  .startpill{margin-top:12px;padding:10px 16px}
-}
+/* ---------- the 2x2 ---------- */
+.mapwrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.maphead{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.maphead b{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:600}
+.maphead span{font-family:var(--f-mono);font-size:10px;color:var(--ink-2);margin-left:auto}
 
-.factstrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-.fact{
-  border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12.5px;
-  color:#CBD5E1;background:var(--card-2);
+.axisrow{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px}
+.ylab{
+  writing-mode:vertical-rl;transform:rotate(180deg);
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-2);display:flex;align-items:center;justify-content:space-between;padding-block:2px;
 }
-.explainbox{
-  border:1px solid var(--line);border-left:3px solid var(--teal-l);border-radius:10px;
-  background:var(--card-2);padding:14px 16px;margin:16px 0;
-}
-.explainbox .t{
-  font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
-  color:var(--teal-l);margin-bottom:8px;
-}
-.explainbox li{font-size:13.5px}
-.sechead{margin:44px 0 16px}
-.sechead h2{margin-bottom:8px}
+.plot{position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--sunk);border:1px solid var(--line)}
+.quads{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.quad{padding:11px;display:flex;flex-direction:column;gap:3px;border:1px solid transparent;transition:background .35s,border-color .35s}
+.quad:nth-child(1){border-right-color:var(--line);border-bottom-color:var(--line)}
+.quad:nth-child(2){border-bottom-color:var(--line)}
+.quad:nth-child(3){border-right-color:var(--line)}
+.quad b{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:-.015em;line-height:1.1}
+.quad i{font-style:normal;font-family:var(--f-mono);font-size:9px;letter-spacing:.06em;color:var(--ink-2);line-height:1.35}
+.quad.on{background:var(--glow);border-color:var(--teal)}
+.quad.on b{color:var(--teal)}
+.quad.q-bad.on{background:rgba(242,116,76,.14);border-color:var(--red)}
+.quad.q-bad.on b{color:var(--red)}
+.quad.q-mid.on{background:rgba(233,168,58,.13);border-color:var(--amber)}
+.quad.q-mid.on b{color:var(--amber)}
 
-/* ================= ASSESSMENT ================= */
-.qwrap{padding:22px 0 60px}
-.progbar{position:sticky;top:60px;z-index:50;background:var(--bg);padding:12px 0 10px;border-bottom:1px solid var(--line)}
-.progtop{display:flex;align-items:center;gap:10px;font-size:12.5px;margin-bottom:8px}
-.progtop .cat{font-weight:700}
-.progtrack{height:6px;border-radius:99px;background:rgba(148,163,184,.18);overflow:hidden}
-.progfill{height:100%;background:linear-gradient(90deg,var(--teal-l),var(--navy-l));width:0;transition:width .35s}
-.catdots{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
-.catdot{
-  font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--mute);
+.marker{
+  position:absolute;width:20px;height:20px;border-radius:50%;
+  left:50%;bottom:50%;transform:translate(-50%,50%);
+  background:var(--teal);border:3px solid var(--bg);
+  box-shadow:0 0 0 4px var(--glow);
+  transition:left .6s cubic-bezier(.22,1,.36,1),bottom .6s cubic-bezier(.22,1,.36,1),background .4s;
+  z-index:2;
 }
-.catdot.on{border-color:var(--teal-l);color:var(--teal-l)}
-.catdot.done{border-color:rgba(63,208,122,.5);color:var(--green-l)}
-.qcard{margin-top:24px}
-.qcat{
-  display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;
-  letter-spacing:.13em;text-transform:uppercase;color:var(--teal-l);margin-bottom:10px;
+.marker.idle{background:var(--ink-2);box-shadow:none}
+.xlab{
+  display:flex;justify-content:space-between;gap:10px;margin-top:7px;
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);
 }
-.qframe{font-size:13.5px;color:var(--mute);margin:-2px 0 16px;max-width:62ch}
-.qtext{font-size:clamp(19px,2.7vw,25px);font-weight:800;letter-spacing:-.02em;line-height:1.25;max-width:26ch}
-.anchors{
-  display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;font-family:var(--mono);
-  font-size:11px;color:var(--mute);letter-spacing:.04em;
+.mapfoot{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.mapfoot strong{color:var(--ink);font-weight:600}
+
+/* ---------- panels ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow)}
+.kicker{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);display:block;margin-bottom:9px}
+.lede{color:var(--ink-2);font-size:15.5px;margin-top:11px;max-width:60ch}
+h1{font-size:clamp(26px,4.2vw,36px)}
+h2{font-size:clamp(20px,3vw,25px)}
+h3{font-size:16.5px;letter-spacing:-.015em}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.chip{border:1px solid var(--line-2);border-radius:99px;padding:5px 12px;font-size:12.5px;color:var(--ink-2)}
+
+.cta{
+  display:inline-flex;align-items:center;gap:9px;margin-top:20px;
+  background:var(--teal);color:var(--teal-ink);border:0;border-radius:11px;
+  padding:14px 24px;font-family:var(--f-display);font-weight:700;font-size:15.5px;letter-spacing:-.01em;
 }
-.anchors span{border:1px solid var(--line);border-radius:6px;padding:4px 8px}
-.opts{margin-top:16px;display:grid;gap:9px}
+.cta:hover{filter:brightness(1.07)}
+.cta.ghost{background:none;border:1px solid var(--line-2);color:var(--ink);font-weight:600}
+.cta.ghost:hover{border-color:var(--teal);color:var(--teal);filter:none}
+.cta.sm{padding:9px 15px;font-size:13.5px;border-radius:9px;margin-top:0}
+.ctarow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:20px}
+
+/* ---------- question ---------- */
+.prog{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.progtrack{flex:1;height:4px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.progfill{height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--teal));transition:width .4s ease}
+.progtxt{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+
+.qtag{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);display:block;margin-bottom:10px}
+.qtag u{text-decoration:none;color:var(--teal)}
+.qtext{font-family:var(--f-display);font-size:clamp(19px,2.9vw,25px);font-weight:700;letter-spacing:-.02em;line-height:1.22;max-width:26ch}
+
+.opts{display:grid;gap:8px;margin-top:18px}
 .opt{
-  text-align:left;background:var(--card);border:1px solid var(--line);border-radius:11px;
-  padding:14px 15px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;
-  transition:border-color .15s,background .15s;
+  display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;
+  transition:border-color .16s,background .16s,transform .16s;
 }
-.opt:hover{border-color:var(--teal-l)}
-.opt.picked{border-color:var(--teal-l);background:rgba(15,110,86,.18)}
-.opt .num{
-  font-family:var(--mono);font-size:11px;color:var(--mute);border:1px solid var(--line-2);
-  border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;
+.opt:hover{border-color:var(--teal);transform:translateX(2px)}
+.opt .key{
+  font-family:var(--f-mono);font-size:11px;color:var(--ink-2);border:1px solid var(--line-2);border-radius:6px;
+  width:23px;height:23px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;
 }
-.opt.picked .num{border-color:var(--teal-l);color:var(--teal-l)}
-.opt .txt{font-size:15px;line-height:1.4}
-.reaction{
-  margin-top:14px;border-left:3px solid var(--teal-l);background:rgba(15,110,86,.15);
-  border-radius:0 10px 10px 0;padding:12px 14px;font-size:14.5px;
-}
-.reaction .rk{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
-  color:var(--teal-l);display:block;margin-bottom:4px;
-}
-.ownwords{
-  margin-top:16px;border:1px solid var(--line);border-radius:12px;
-  background:var(--card-2);padding:13px 14px;
-}
-.owntop{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:9px}
-.ownlabel{
-  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-l);
-}
-.micbtn{
-  margin-left:auto;background:none;border:1px solid var(--line-2);border-radius:999px;
-  padding:5px 12px;font-size:12px;font-weight:600;color:var(--mute);cursor:pointer;
-}
-.micbtn:hover{border-color:var(--teal-l);color:var(--teal-l)}
-.micbtn.rec{border-color:var(--red-l);color:var(--red-l)}
-.ownwords textarea{min-height:64px;background:var(--card-3)}
-.ownrule{font-size:12px;color:var(--mute);margin:9px 0 0;line-height:1.45}
-.tag-typed{
-  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--amber-l);border:1px solid rgba(233,168,58,.45);border-radius:5px;padding:2px 6px;
-}
-.typedquote{
-  border-left:2px solid var(--amber-l);padding-left:10px;margin:6px 0;font-size:13px;color:#E8DCC4;
-}
-textarea,input,select{
-  width:100%;background:var(--card-3);border:1px solid var(--line-2);border-radius:10px;
-  padding:12px 13px;color:var(--ink);font:inherit;font-size:15px;
-}
-textarea{min-height:76px;resize:vertical}
-input:focus,textarea:focus,select:focus{outline:2px solid var(--teal-l);outline-offset:1px}
-.navrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px}
+.opt .lbl{font-size:14.8px;line-height:1.4}
+.opt.picked{border-color:var(--teal);background:var(--glow)}
+.opt.picked .key{border-color:var(--teal);color:var(--teal)}
 
-/* ================= GATE ================= */
-.gatepage{padding:30px 0 70px}
-.teaser{
-  border:1px solid rgba(53,214,164,.35);background:rgba(15,110,86,.14);
-  border-radius:14px;padding:18px;margin-bottom:20px;
+.react{
+  margin-top:16px;border-left:3px solid var(--teal);background:var(--glow);
+  border-radius:0 11px 11px 0;padding:13px 15px;
 }
-.teaser .big{font-size:clamp(30px,6vw,46px);font-weight:800;letter-spacing:-.03em;line-height:1}
-.fieldgrid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
-@media(max-width:560px){.fieldgrid{grid-template-columns:1fr}}
-.field label{display:block;font-size:12.5px;color:var(--mute);margin-bottom:6px;font-weight:600}
-.err{color:var(--red-l);font-size:13px;margin-top:10px}
+.react b{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:5px;font-weight:600}
+.react p{font-size:14.8px;line-height:1.45}
 
-/* ================= REPORT ================= */
-.report{padding:0 0 40px}
-.rhero{
-  background:radial-gradient(120% 140% at 10% 0%,#16233F 0%,#0A0F1E 62%);
-  border-bottom:1px solid var(--line);padding:34px 0 30px;
-}
-.partnav{
-  position:sticky;top:60px;z-index:45;background:rgba(10,15,30,.94);backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);overflow-x:auto;
-}
-.partnav .in{display:flex;gap:6px;padding:9px 20px;max-width:var(--wrap);margin:0 auto}
-.partnav button{
-  background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;
-  font-size:12px;font-weight:600;color:var(--mute);cursor:pointer;white-space:nowrap;
-}
-.partnav button:hover{border-color:var(--teal-l);color:var(--teal-l)}
-.sec{padding:34px 0 4px;border-top:1px solid var(--line);margin-top:30px}
-.sec:first-of-type{border-top:0;margin-top:0}
-.secnum{
-  font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--teal-l);display:block;margin-bottom:7px;
-}
-.secintro{color:#CBD5E1;font-size:15px;max-width:70ch;margin-bottom:6px}
-.unitline{
-  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--mute);
-  border:1px dashed var(--line-2);border-radius:8px;padding:7px 11px;display:inline-block;margin:6px 0 14px;
-}
+.navrow{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px}
+.back{background:none;border:0;color:var(--ink-2);font-size:13.5px;padding:6px 0;text-decoration:underline;text-underline-offset:4px}
+.back:hover{color:var(--ink)}
 
-/* verdict */
-.vbanner{
-  border-radius:16px;padding:22px;border:1px solid var(--line-2);
-  background:linear-gradient(135deg,rgba(31,58,110,.5),rgba(15,110,86,.2));
-}
-.vword{font-size:clamp(32px,6vw,52px);font-weight:800;letter-spacing:-.035em;line-height:1}
-.vmeaning{font-size:15.5px;color:#DDE5F0;margin-top:8px;max-width:62ch}
-.scalestrip{margin-top:18px}
-.scalebands{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.sb{border-radius:8px;padding:9px 8px;border:1px solid var(--line);background:var(--card-3)}
-.sb b{display:block;font-size:12.5px}
-.sb span{font-family:var(--mono);font-size:10.5px;color:var(--mute);display:block}
-.sb small{display:block;font-size:11px;color:var(--mute);margin-top:4px;line-height:1.35}
-.sb.you{border-color:var(--teal-l);background:rgba(15,110,86,.25)}
-.youmark{
-  font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--teal-l);
-  display:block;margin-bottom:4px;
-}
-.tiles{margin-top:14px}
-.tile{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
-.tile .tv{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
-.tile .tl{font-size:12px;color:var(--mute);margin-top:4px;line-height:1.35}
+/* ---------- result ---------- */
+.verdict{border:1px solid var(--teal);border-radius:14px;padding:19px;background:var(--glow)}
+.verdict.v-bad{border-color:var(--red);background:rgba(242,116,76,.12)}
+.verdict.v-mid{border-color:var(--amber);background:rgba(233,168,58,.11)}
+.vname{font-family:var(--f-display);font-size:clamp(25px,4.6vw,34px);font-weight:800;letter-spacing:-.03em;line-height:1}
+.verdict .vsub{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin-top:7px}
+.verdict .vbody{margin-top:11px;font-size:15px;line-height:1.5;max-width:58ch}
 
-/* category scorecard */
-.catrow{border:1px solid var(--line);border-radius:12px;background:var(--card-2);padding:15px;margin-bottom:11px}
-.catrow .top{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:9px}
-.catrow .nm{font-weight:800;font-size:16px;letter-spacing:-.02em}
-.catrow .sc{font-family:var(--mono);font-size:13px;color:var(--teal-l);font-weight:700}
-.bar{position:relative;height:12px;border-radius:99px;background:rgba(148,163,184,.16);overflow:hidden;margin:8px 0 6px}
-.bar .band{position:absolute;top:0;bottom:0;left:50%;width:20%;background:rgba(148,163,184,.16)}
-.bar .fill{position:absolute;top:0;bottom:0;left:0;border-radius:99px}
-.anchorline{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--mute);gap:10px}
-.why{margin-top:10px;font-size:13.5px;color:#CBD5E1}
-.why b{color:var(--ink)}
-.quote{
-  border-left:2px solid var(--line-2);padding-left:10px;margin:6px 0;font-size:13px;
-  color:#CBD5E1;font-style:italic;
-}
+.sechead{margin:30px 0 13px}
+.sechead h3{margin-bottom:5px}
+.sechead p{color:var(--ink-2);font-size:13.5px}
 
-/* checks */
-.check{border:1px solid var(--line);border-radius:12px;background:var(--card-2);padding:15px}
-.check .ck{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
-.check h4{margin-bottom:7px;font-size:15px;line-height:1.3}
-.check .ex{font-size:13.5px;color:#CBD5E1;margin-bottom:10px}
-.rulebox{
-  border:1px dashed var(--line-2);border-radius:10px;padding:12px 14px;margin-top:14px;
-  font-size:13px;color:#CBD5E1;background:var(--card-3);
-}
-.rulebox b{color:var(--ink)}
+.hole{border:1px solid var(--line);border-left:3px solid var(--red);border-radius:0 11px 11px 0;background:var(--surface-2);padding:13px 15px;margin-bottom:9px}
+.hole .hq{font-size:12.5px;color:var(--ink-2);margin-bottom:5px}
+.hole .ha{font-size:14.8px;font-weight:600;letter-spacing:-.01em}
+.hole .hw{font-size:13.5px;color:var(--ink-2);margin-top:6px;line-height:1.45}
 
-/* gap cards */
-.gap{border:1px solid var(--line);border-radius:13px;overflow:hidden;margin-bottom:14px;background:var(--card-2)}
-.gaphead{
-  display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 15px;
-  background:rgba(255,255,255,.03);border-bottom:1px solid var(--line);
-}
-.gaphead .gn{font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.1em}
-.gaphead .ga{font-weight:800;font-size:15px;letter-spacing:-.02em}
-.gapbody{display:grid;grid-template-columns:1fr 1fr;gap:0}
-.gapcol{padding:15px}
-.gapcol+.gapcol{border-left:1px solid var(--line);background:rgba(15,110,86,.09)}
-.gapcol .ch{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
-  color:var(--mute);margin-bottom:10px;
-}
-.gapcol+.gapcol .ch{color:var(--teal-l)}
-.gapcol ul{padding-left:0;list-style:none}
-.gapcol li{font-size:13.5px;margin-bottom:9px}
-.gapcol li b{display:block;font-size:11px;font-family:var(--mono);letter-spacing:.08em;
-  text-transform:uppercase;color:var(--mute);margin-bottom:2px;font-weight:600}
-@media(max-width:700px){
-  .gapbody{grid-template-columns:1fr}
-  .gapcol+.gapcol{border-left:0;border-top:1px solid var(--line)}
-}
+.byop{display:grid;gap:9px}
+.bline{display:flex;gap:11px;align-items:flex-start;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+.bline .bn{font-family:var(--f-mono);font-size:10.5px;font-weight:600;color:var(--teal-ink);background:var(--teal);border-radius:5px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:2px}
+.bline p{font-size:14.2px;line-height:1.45}
+.bline b{font-weight:600}
 
-/* ranking */
-.rank{border:1px solid var(--line);border-radius:12px;background:var(--card-2);padding:14px 15px;margin-bottom:10px}
-.rank .rh{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:8px}
-.rank .rn{
-  font-family:var(--mono);font-size:12px;font-weight:700;color:#04121B;background:var(--teal-l);
-  border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex:none;
-}
-.rank .rt{font-weight:800;font-size:15px;letter-spacing:-.02em}
-.maths{font-family:var(--mono);font-size:12px;color:var(--mute);line-height:1.7;margin-top:6px}
-.maths b{color:var(--teal-l)}
+.closer{border:1px solid var(--line-2);border-radius:14px;padding:19px;margin-top:26px;background:var(--surface-2)}
 
-/* phases */
-.phase{border:1px solid var(--line);border-radius:13px;background:var(--card-2);padding:16px}
-.phase .pnum{
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-l);
-}
-.phase h4{margin:6px 0 8px;font-size:16.5px}
-.statecard{border:1px solid var(--line);border-radius:13px;padding:16px}
-.statecard.today{border-color:rgba(242,116,76,.4);background:rgba(153,60,29,.12)}
-.statecard.day90{border-color:rgba(63,208,122,.4);background:rgba(26,107,60,.14)}
-.statecard ul{padding-left:16px}
-.statecard li{font-size:13.5px}
+/* ---------- facilitator ---------- */
 
-/* receipts */
-.receipt{border:1px solid var(--line);border-radius:11px;background:var(--card-2);padding:13px 15px;margin-bottom:9px}
-.receipt .rq{font-size:12.5px;color:var(--mute);margin-bottom:5px}
-.receipt .ra{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
-.receipt .rr{font-size:13px;color:#CBD5E1;margin-top:6px}
-.receipt .tag{
-  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--teal-l);border:1px solid rgba(53,214,164,.4);border-radius:5px;padding:2px 6px;
-}
 
-/* chart shell */
-.chartbox{border:1px solid var(--line);border-radius:13px;background:var(--card-2);padding:16px}
-.chartbox > svg{width:100%;height:auto;display:block}
-.radarlay{display:grid;gap:18px;align-items:start}
-.radarlay svg.radar-svg{width:100%;height:auto;display:block}
-@media(min-width:880px){.radarlay{grid-template-columns:minmax(0,430px) 1fr;gap:26px}}
-.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
-.legend .li{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#CBD5E1}
-.legend svg{width:auto;flex:none}
-.keyrows{margin-top:14px;display:grid;gap:8px}
-.keyrow{display:flex;gap:11px;align-items:flex-start;font-size:13.5px}
-.keyrow .kb{
-  font-family:var(--mono);font-size:11px;font-weight:700;color:#04121B;background:var(--teal-l);
-  border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;
-}
-.keyrow .kt b{display:block;font-size:13.5px}
-.keyrow .kt span{color:var(--mute);font-size:12.5px}
-.radar-fallback{display:none}
-@media(max-width:760px){
-  .radar-svg{display:none}
-  .radar-fallback{display:block}
-}
-.fbrow{margin-bottom:10px}
-.fbrow .fbt{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:4px}
-.fbtrack{height:10px;border-radius:99px;background:rgba(148,163,184,.16);overflow:hidden}
-.fbfill{height:100%;border-radius:99px}
+.footnote{margin-top:22px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
 
-/* closing */
-.closing{
-  border:1px solid rgba(53,214,164,.35);border-radius:16px;padding:22px;
-  background:linear-gradient(135deg,rgba(15,110,86,.22),rgba(31,58,110,.3));margin-top:26px;
+/* ---------- concept framing ---------- */
+.concept{
+  margin-top:20px;border:1px dashed rgba(233,168,58,.55);background:rgba(233,168,58,.09);
+  border-radius:12px;padding:13px 16px;display:flex;gap:13px;align-items:flex-start;
 }
-.footnote{font-size:12.5px;color:var(--mute);margin-top:18px;line-height:1.6}
+.concept .ck{
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--amber);font-weight:600;white-space:nowrap;border:1px solid rgba(233,168,58,.5);
+  border-radius:5px;padding:3px 8px;margin-top:1px;flex:none;
+}
+.concept p{font-size:13.2px;line-height:1.5;color:var(--ink-2)}
+.concept b{color:var(--ink);font-weight:600}
+@media (max-width:560px){.concept{flex-direction:column;gap:9px}}
 
-/* ================= OPERATOR ================= */
-.opbar{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 20px}
-.optab{
-  background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:8px 15px;
-  font-size:13.5px;font-weight:600;color:var(--mute);cursor:pointer;
-}
-.optab.on{border-color:var(--teal-l);color:var(--teal-l);background:rgba(15,110,86,.18)}
-.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
-.tbl th{
-  text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--mute);padding:9px 10px;border-bottom:1px solid var(--line-2);font-weight:600;
-}
-.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-.tbl tr:hover td{background:rgba(255,255,255,.02)}
-.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card-2)}
-.rowbtn{background:none;border:0;color:var(--teal-l);cursor:pointer;font-weight:700;font-size:13px;padding:0}
-.distrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
-.distrow .dl{width:96px;flex:none;color:var(--mute);font-size:12.5px}
-.disttrack{flex:1;height:14px;border-radius:6px;background:rgba(148,163,184,.14);overflow:hidden}
-.distfill{height:100%;border-radius:6px}
-.gates{display:grid;gap:8px}
-.gaterow{
-  display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;
-  padding:10px 12px;background:var(--card-3);font-size:13.5px;
-}
-.gaterow select{width:auto;padding:6px 9px;font-size:12.5px;margin-left:auto}
-.callq{border:1px solid var(--line);border-radius:11px;background:var(--card-2);padding:13px 14px;margin-bottom:10px}
-.callq .qq{font-size:14.5px;font-weight:700;margin-bottom:4px;letter-spacing:-.01em}
-.magnets{display:grid;gap:8px}
-.magnet{
-  display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;
-  padding:10px 12px;background:var(--card-3);font-size:13.5px;cursor:pointer;text-align:left;width:100%;
-}
-.magnet.on{border-color:var(--teal-l);background:rgba(15,110,86,.2)}
-.splitcall{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media(max-width:900px){.splitcall{grid-template-columns:1fr}}
-.demoband{
-  border:1px dashed rgba(233,168,58,.5);background:rgba(133,79,11,.14);border-radius:10px;
-  padding:11px 14px;font-size:13px;color:#EBD8B4;margin-bottom:16px;
-}
-.demoband b{color:var(--amber-l)}
+.limits{border:1px solid var(--line-2);border-radius:13px;padding:17px 19px;margin-top:14px;background:var(--sunk)}
+.limits h3{margin-bottom:10px}
+.limits ul{margin:0;padding-left:17px}
+.limits li{font-size:13.8px;margin-bottom:7px;line-height:1.5;color:var(--ink-2)}
+.limits li b{color:var(--ink);font-weight:600}
 
-@media print{
-  .noprint{display:none !important}
-  body{background:#fff;color:#111}
-  .card,.tile,.catrow,.gap,.rank,.phase,.chartbox{background:#fff;border-color:#ccc}
-}
-@media (prefers-reduced-motion:reduce){
-  *{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
 }
 </style>
-</head>
-<body>
-<div class="topbar noprint">
-  <div class="wrap in">
-    <div class="mark"><span class="glyph"></span>Skyrelis <small>Security Hub</small></div>
-    <span class="spacer"></span>
-    <span class="demo-tag">Demo preview</span>
-    <button class="linkbtn" id="opBtn">Operator view</button>
+
+<div class="mast">
+  <div class="in">
+    <span class="brand"><span class="dot9"></span>Skyrelis <em>Agent Control Check</em></span>
+    <span class="grow"></span>
+    <span class="stamp">Concept &middot; Navvai</span>
   </div>
 </div>
 
-<!-- ============================ HOME ============================ -->
-<main id="home">
-  <section class="wrap hero">
-    <span class="kick kick-t">Agentic security readiness assessment</span>
-    <h1>Can you control what your AI agents are doing across the business?</h1>
-    <p class="lead">Fifteen questions, about seven minutes. You get a score out of 100, your two largest gaps in plain language, and a report you can hand to a security team.</p>
+<div class="shell">
 
-    <div class="factstrip">
-      <span class="fact">Scored on your answers only</span>
-      <span class="fact">No sales call needed to see it</span>
-      <span class="fact">No peer averages until the dataset exists</span>
-    </div>
+  {% if show_concept %}
+  <div class="concept">
+    <span class="ck">Example, not the finished thing</span>
+    <p>Built by Navvai to show one direction rather than to propose a final asset. <b>The seven questions, the wording and the four names are a first pass and all of them are up for argument.</b> What is worth reacting to is the shape: two axes, four positions, and a reader who learns the idea by answering rather than by being told it.</p>
+  </div>
+  {% endif %}
 
-    <div class="startrow">
-      <h2>Start here</h2>
-      <span class="mute small">Pick the one that describes you. Both score the same six categories.</span>
-    </div>
+  <div class="stage">
 
-    <div class="grid g2 lanecards" id="routes">
-      <button class="lanecard" type="button" data-lane="saas">
-        <span class="pill p-teal">Route one</span>
-        <b>We build agents into our product and sell to enterprise</b>
-        <span class="mute small">Every enterprise customer wants different rules, so policy changes go back to engineering and security review stalls the deal.</span>
-        <span class="startpill">Start this route</span>
-      </button>
-      <button class="lanecard" type="button" data-lane="ent">
-        <span class="pill p-navy">Route two</span>
-        <b>We deploy agents inside our own organisation</b>
-        <span class="mute small">Agents are shipping across HR, IT, finance and service faster than security can govern them, and audit evidence is assembled by hand.</span>
-        <span class="startpill">Start this route</span>
-      </button>
-    </div>
-  </section>
-
-  <section class="wrap">
-    <div class="sechead">
-      <span class="kick">What you get</span>
-      <h2>Six parts, in this order</h2>
-    </div>
-    <div class="steps">
-      <div class="step"><span class="sn">1</span><span><b>The verdict</b><span>Your score, your band, and the six category scorecard.</span></span></div>
-      <div class="step"><span class="sn">2</span><span><b>The load</b><span>What your policy change process costs you in waiting time.</span></span></div>
-      <div class="step"><span class="sn">3</span><span><b>The exposure</b><span>Your blind spot, then one check per category.</span></span></div>
-      <div class="step"><span class="sn">4</span><span><b>The gaps and the fix</b><span>Every weak answer, worst first, with the work that closes it.</span></span></div>
-      <div class="step"><span class="sn">5</span><span><b>The plan</b><span>Ninety days, three phases, a named owner each.</span></span></div>
-      <div class="step"><span class="sn">6</span><span><b>The receipts</b><span>Every answer you gave and what it changed.</span></span></div>
-    </div>
-
-    <div class="sechead">
-      <span class="kick">What the assessment is about</span>
-      <h2>Runtime governance, in one panel</h2>
-      <p class="lead">Every action an agent takes is a request. The gate decides each one against a policy. Switch who owns that policy and the decisions stay the same, only the time to change a rule moves.</p>
-    </div>
-
-    <div class="gatebox" id="gateviz">
-      <div class="gatehead">
-        <b>Who owns the policy?</b>
-        <span class="spacer"></span>
-        <div class="gate-toggle" role="group" aria-label="Policy owner">
-          <button type="button" id="ownEng">Engineering</button>
-          <button type="button" id="ownSec" class="on">Security team</button>
+    <!-- ================= THE MAP ================= -->
+    <div class="mapcol">
+      <div class="mapwrap">
+        <div class="maphead"><b>Where you land</b><span id="mapState">not placed yet</span></div>
+        <div class="axisrow">
+          <div class="ylab"><span>Scattered</span><span>One place</span></div>
+          <div class="plot">
+            <div class="quads">
+              <div class="quad q-mid" id="qd-locked"><b>Locked down</b><i>One place &middot; hardcoded</i></div>
+              <div class="quad q-good" id="qd-control"><b>Control plane</b><i>One place &middot; on the fly</i></div>
+              <div class="quad q-bad" id="qd-holes"><b>Black holes</b><i>Scattered &middot; hardcoded</i></div>
+              <div class="quad q-mid" id="qd-patch"><b>Patchwork</b><i>Scattered &middot; on the fly</i></div>
+            </div>
+            <div class="marker idle" id="marker"></div>
+          </div>
+        </div>
+        <div class="xlab"><span>Hardcoded</span><span>On the fly</span></div>
+        <div class="mapfoot" id="mapFoot">
+          Two questions decide everything else: <strong>where your agent rules live</strong>, and <strong>how they change</strong>. Nobody really starts in the middle. Seven questions moves this dot.
         </div>
       </div>
-      <div class="gatestage">
-        <div>
-          <div class="lane-h">Agent actions, live</div>
-          <div id="actionLane"></div>
+    </div>
+
+    <!-- ================= PANELS ================= -->
+    <div class="panelcol">
+
+      <!-- intro -->
+      <section class="panel" id="scIntro">
+        <span class="kicker">Seven questions &middot; about two minutes</span>
+        <h1>Can you say what every one of your AI agents is allowed to do?</h1>
+        <p class="lede">Most teams can answer that for the agents they built on purpose. The check is about the rest: where the rules actually live, and what happens the day somebody needs them changed.</p>
+        <div class="chips">
+          <span class="chip">No email needed</span>
+          <span class="chip">No name asked for</span>
+          <span class="chip">Your answers only, no benchmarks</span>
         </div>
-        <div class="gatecore">
-          <i class="tipL" aria-hidden="true"></i><i class="tipR" aria-hidden="true"></i>
-          <b>Policy gate</b>
-          <span id="gateSub">Rules owned by the security team. Changed at runtime.</span>
+        <div class="ctarow">
+          <button class="cta" id="btnStart">Start the check</button>
+          <span style="font-size:12.5px;color:var(--ink-2)">Seven taps. The dot moves as you go.</span>
         </div>
-        <div>
-          <div class="lane-h">Decision and evidence</div>
-          <div id="verdictLane"></div>
+      </section>
+
+      <!-- question -->
+      <section class="panel" id="scQ" hidden>
+        <div class="prog">
+          <span class="progtxt" id="pgTxt">Question 1 of 7</span>
+          <span class="progtrack"><span class="progfill" id="pgFill"></span></span>
         </div>
-      </div>
-      <div class="gatefoot" id="gateFoot"></div>
-    </div>
+        <span class="qtag" id="qTag"></span>
+        <h2 class="qtext" id="qText"></h2>
+        <div class="opts" id="qOpts"></div>
+        <div id="qReact"></div>
+        <div class="navrow">
+          <button class="back" id="btnBack">Back</button>
+          <button class="cta sm" id="btnNext" hidden>Next</button>
+        </div>
+      </section>
 
-    <div class="center" style="margin:34px 0 70px">
-      <button class="btn" type="button" id="startTop">Start the assessment</button>
-      <p class="tiny mute" style="margin-top:10px">Takes you back up to the two routes.</p>
-    </div>
-  </section>
-</main>
+      <!-- result -->
+      <section class="panel" id="scResult" hidden></section>
 
-<!-- ========================= ASSESSMENT ========================= -->
-<main id="assess" class="hide">
-  <div class="progbar noprint">
-    <div class="wrap">
-      <div class="progtop">
-        <span class="cat" id="pgCat">Category 1 of 6</span>
-        <span class="mute" id="pgQ">Question 1 of 24</span>
-        <span class="spacer"></span>
-        <span class="mute" id="pgPct">0%</span>
-      </div>
-      <div class="progtrack"><div class="progfill" id="pgFill"></div></div>
-      <div class="catdots" id="pgDots"></div>
+      <!-- soft exit -->
+      <section class="panel" id="scExit" hidden>
+        <span class="kicker">Nothing to govern yet</span>
+        <h2>A person approves every step, so the person is the control</h2>
+        <p class="lede">This check measures how you govern agents that act on their own. While someone signs off each action, that someone is your policy engine, and it works. It stops working the first time an agent is trusted to act unattended, because the rules then have to live somewhere other than a person's judgement.</p>
+        <div class="closer">
+          <h3>Worth knowing before that day</h3>
+          <p style="margin-top:9px;font-size:14.5px;color:var(--ink-2)">The cheapest moment to decide where your agent rules live is before any agent needs them. Retrofitting control onto agents already running in production is the expensive version, and it is the version most teams end up doing.</p>
+        </div>
+        <div class="ctarow"><button class="cta ghost" id="btnExitRestart">Start again</button></div>
+      </section>
+
     </div>
   </div>
-  <div class="wrap narrow qwrap">
-    <div class="qcard" id="qcard"></div>
-    <div class="navrow">
-      <button class="btn ghost sm" type="button" id="backBtn">Back</button>
-      <span class="tiny mute" id="saveNote">Your answers save on this device as you go</span>
-      <button class="btn sm" type="button" id="nextBtn" disabled>Next</button>
-    </div>
-  </div>
-</main>
+</div>
 
-<!-- ============================ GATE ============================ -->
-<main id="gate" class="hide">
-  <div class="wrap narrow gatepage">
-    <div class="teaser">
-      <span class="kick kick-t">Your score is calculated</span>
-      <div class="big" id="teaseScore">--</div>
-      <p class="lead" id="teaseBand" style="margin:8px 0 0"></p>
-      <p class="small mute" id="teaseGap" style="margin:10px 0 0"></p>
-    </div>
-    <div id="gateBlock" class="card hide" style="border-color:rgba(233,168,58,.5);margin-bottom:18px">
-      <h3>We cannot score this run</h3>
-      <ul style="margin-top:10px">
-        <li>Every question was answered in your own words and none were tapped.</li>
-        <li>Typed answers are quoted in the report but never scored, so there is nothing to calculate from.</li>
-        <li>Go back and tap an option on at least one question. Your typed answers are all kept.</li>
-      </ul>
-    </div>
-    <h2>Where should the full report go?</h2>
-    <p class="lead">The report includes your six category scores, both gaps expanded, the work that closes each one, and a ninety day plan.</p>
-    <div class="card" style="margin-top:16px" id="gateForm">
-      <div class="fieldgrid">
-        <div class="field"><label for="fFirst">First name</label><input id="fFirst" autocomplete="given-name"></div>
-        <div class="field"><label for="fLast">Last name</label><input id="fLast" autocomplete="family-name"></div>
-        <div class="field"><label for="fEmail">Work email</label><input id="fEmail" type="email" autocomplete="email"></div>
-        <div class="field"><label for="fCompany">Company</label><input id="fCompany" autocomplete="organization"></div>
-        <div class="field" style="grid-column:1/-1"><label for="fRole">Role</label><input id="fRole" autocomplete="organization-title" placeholder="For example: CTO, Head of Security, VP Engineering"></div>
-      </div>
-      <p class="tiny mute" style="margin:12px 0 0">One send unless you opt in. Your answers join the industry report dataset anonymously.</p>
-      <div id="gateErr" class="err hide"></div>
-      <div class="btnrow" style="margin-top:16px">
-        <button class="btn" type="button" id="unlockBtn">Show my report</button>
-        <button class="btn ghost" type="button" id="gateBack">Back to the last question</button>
-      </div>
-    </div>
-  </div>
-</main>
-
-<!-- =========================== REPORT =========================== -->
-<main id="report" class="hide report">
-  <div id="reportBody"></div>
-  <div class="wrap narrow noprint" id="reportActions"></div>
-</main>
-
-<!-- ========================== OPERATOR ========================== -->
-<main id="operator" class="hide">
-  <div class="wrap" style="padding:24px 0 70px">
-    <span class="kick kick-t">Operator view</span>
-    <h2 id="opTitle">Jaz's dashboard</h2>
-    <div class="opbar" id="opTabs">
-      <button class="optab on" type="button" data-tab="dash">Dashboard</button>
-      <button class="optab" type="button" data-tab="pipe">Pipeline</button>
-      <button class="optab" type="button" data-tab="set">Settings</button>
-      <button class="optab" type="button" data-tab="exit">Back to the assessment</button>
-    </div>
-    <div class="demoband">
-      <b>Demo data.</b> Nine contacts below are seeded examples so the screens are not empty. Any assessment you complete in this preview is added as a real record and marked <b>Live</b>. In the live version this reads from the database and the CSV export includes every field in the data model.
-    </div>
-    <div id="opBody"></div>
-  </div>
-</main>
 <script>
-/* =============================================================
-   SKYRELIS AGENTIC SECURITY HUB
-   Single file demo build. Navvai, July 2026.
-   Content model, scoring rules and copy.
-============================================================= */
-
-const TOK = {
-  saas:{C:'your enterprise customers', Cs:'an enterprise customer', P:'their security team', ORG:'your product', WHO:'the customer'},
-  ent :{C:'your business units',       Cs:'a business unit',       P:'your security team',  ORG:'your environment', WHO:'the business unit'}
-};
-function tok(s,lane){
-  if(!s) return '';
-  const t = TOK[lane]||TOK.saas;
-  return s.replace(/\{(\w+)\}/g, (m,k)=> t[k]!==undefined ? t[k] : m);
-}
-
-/* ---------------- categories ---------------- */
-const CATS = [
-  {
-    id:'inventory', name:'Inventory', weight:20,
-    core:'Can you control what your AI agents are doing across the business?',
-    frame:'Do you have a complete list of the agents running in {ORG}, what each one can reach, and who put it there?',
-    a1:'1 means no reliable list exists', a5:'5 means a live inventory that updates itself',
-    low:'You cannot govern what is not on a list. Every other control in this assessment assumes you know what is running.',
-    best:'A live inventory that registers an agent at deployment, records its owner, and shows what it is permitted to reach, checked against what it actually calls.',
-    fitTitle:'Agent inventory and discovery',
-    fit:'Skyrelis inventories agents at runtime rather than relying on a register someone maintains by hand. Because the SDK and gateway sit in the path of agent activity, an agent that is running shows up whether or not anyone wrote it down.',
-    speed:8, fitScore:9,
-    speedWhy:'Inventory is read only. Nothing has to be blocked to start collecting it.',
-    fitWhy:'Runtime discovery is a core function of the platform.'
-  },
-  {
-    id:'tools', name:'Tools', weight:20,
-    core:'Are agent tool calls controlled and auditable?',
-    frame:'Can an agent call any tool it has credentials for, or is each call decided and recorded?',
-    a1:'1 means credentials decide, nothing else', a5:'5 means each call is decided by policy and logged',
-    low:'A tool call is the moment an agent stops producing text and starts acting on the world. If that moment is not controlled, nothing after it is.',
-    best:'Every tool invocation is evaluated against policy before it runs, and the record shows which agent called what, when, with which parameters, and under which rule.',
-    fitTitle:'Tool call control',
-    fit:'Tool calls pass through the Skyrelis gateway, so a call can be permitted, held for approval or refused at the moment it is made. The same path produces the record, which is why control and evidence arrive together rather than as two projects.',
-    speed:7, fitScore:10,
-    speedWhy:'Requires the gateway in the call path, which is an integration step rather than a rebuild.',
-    fitWhy:'This is the platform working exactly as designed.'
-  },
-  {
-    id:'autonomy', name:'Autonomy', weight:15,
-    core:'Does the agent operate within defined, enforceable boundaries?',
-    frame:'What can your agents do on their own, what needs a human, and can that line move without a code change?',
-    a1:'1 means no stated limits', a5:'5 means limits are defined and enforced outside the code',
-    low:'An undefined boundary is not a boundary. It is a description of what has not gone wrong yet.',
-    best:'A written list of what runs unattended, everything else stopping for a named approver, and the line editable by the people accountable for it.',
-    fitTitle:'Autonomy boundaries and approval gates',
-    fit:'Approval gates are set as policy, so the boundary between unattended and human approved is moved by changing a rule rather than by changing the agent.',
-    speed:6, fitScore:8,
-    speedWhy:'Deciding the boundary is an organisational conversation, which usually takes longer than the configuration.',
-    fitWhy:'Directly supported, though the hard part is agreeing where the line sits.'
-  },
-  {
-    id:'data', name:'Data', weight:15,
-    core:'Is agent access to sensitive data governed and logged?',
-    frame:'Does each agent reach only the data its job needs, and can you prove what it touched?',
-    a1:'1 means agents share broad credentials', a5:'5 means access is scoped per agent and logged per record',
-    low:'Broad access is the finding that turns a security questionnaire into a security review.',
-    best:'Access scoped per agent, reviewed on a schedule, logged at the record level, and revocable by someone who does not need to open the codebase.',
-    fitTitle:'Data access governance',
-    fit:'Data reach is governed as policy per agent, so scope can be narrowed or revoked without touching how the agent authenticates.',
-    speed:5, fitScore:8,
-    speedWhy:'Narrowing access usually means untangling shared service accounts, which is real work.',
-    fitWhy:'Well covered, but the platform can only enforce a scope once someone defines it.'
-  },
-  {
-    id:'runtime', name:'Runtime', weight:20,
-    core:'Can you enforce policy changes without a redeploy?',
-    frame:'When someone needs an agent to behave differently, is that a policy change or a code change, and who owns it?',
-    a1:'1 means every change is a code change', a5:'5 means policy changes take effect immediately, no release',
-    low:'This is the category that turns a security requirement into a delivery problem. Everything queues behind engineering.',
-    best:'Policy sits outside the code. The people accountable for the rules change them directly, and the change is live the same day.',
-    fitTitle:'Runtime policy enforcement and Bring Your Own Policy',
-    fit:'Skyrelis decouples policy from code. Rules are defined and changed by the security team who own them and enforced at runtime, which removes the release cycle from the middle of a security conversation.',
-    speed:8, fitScore:10,
-    speedWhy:'The change is configuration once the gateway is in place, so improvement is visible early.',
-    fitWhy:'This is the specific problem the platform was built for.'
-  },
-  {
-    id:'audit', name:'Audit', weight:10,
-    core:'Can you produce evidence of what the agent did and why?',
-    frame:'If someone asks you to prove an agent stayed inside its limits, what do you hand them?',
-    a1:'1 means no reliable record exists', a5:'5 means evidence is generated on demand, with the reason attached',
-    low:'Evidence assembled by hand is evidence that arrives late and gets challenged.',
-    best:'A timestamped, tamper evident record of every agent action, showing the rule that allowed it, produced on demand rather than assembled.',
-    fitTitle:'Audit ready evidence',
-    fit:'Because every decision passes through the gateway, the evidence is a by product of enforcement rather than a separate logging project. The record carries the policy version that allowed the action, which is the part hand built logs usually miss.',
-    speed:9, fitScore:9,
-    speedWhy:'Evidence starts accumulating as soon as the gateway is in the path.',
-    fitWhy:'Produced automatically by the same component that enforces policy.'
-  }
-];
-const CATBY = {}; CATS.forEach(c=>CATBY[c.id]=c);
-
-/* ---------------- readiness bands ---------------- */
-const BANDS = [
-  {id:'governed',  name:'Governed',  min:75, max:100, colour:'green',
-   meaning:'Your agent security posture is mature. You have the foundations to enforce runtime policy at scale.'},
-  {id:'developing',name:'Developing',min:50, max:74,  colour:'navy',
-   meaning:'The basics are in place but critical gaps remain, most often around runtime control and audit evidence.'},
-  {id:'exposed',   name:'Exposed',   min:25, max:49,  colour:'amber',
-   meaning:'Significant governance gaps. Enterprise customers asking about controls will surface these quickly.'},
-  {id:'critical',  name:'Critical',  min:0,  max:24,  colour:'red',
-   meaning:'Immediate action needed. Agents are operating without meaningful governance.'}
-];
-function bandFor(score){ return BANDS.find(b=> score>=b.min && score<=b.max) || BANDS[3]; }
-
-/* ---------------- sizing questions (not scored) ---------------- */
-const SIZING = [
-  {
-    id:'agents', kind:'sizing',
-    text:'How many agents are running in production today?',
-    help:'This sizes the picture. It is not scored.',
-    opts:[
-      {t:'None yet. We are pre production', v:0, r:'Then this is the cheapest moment you will ever have to set the rules.'},
-      {t:'One to five', v:3,  r:'Small enough to inventory by hand today, and that stops being true fast.'},
-      {t:'Six to twenty', v:13, r:'Past the point where anyone holds the whole picture in their head.'},
-      {t:'More than twenty', v:30, r:'At this count the question is no longer which agent, it is which policy.'}
-    ]
-  },
-  {
-    id:'requests', kind:'sizing',
-    text:'How many policy or permission change requests come from {C} in a quarter?',
-    help:'A request is anyone asking for an agent to be allowed less, or allowed more. Not scored.',
-    opts:[
-      {t:'None so far', v:0, r:'Worth noting whether that is because nobody asks, or because they have learned not to.'},
-      {t:'One to three', v:2, r:'Low volume, and each one still lands in an engineering queue.'},
-      {t:'Four to ten', v:7, r:'That is a steady stream of unplanned engineering work.'},
-      {t:'More than ten', v:15, r:'At that rate policy changes are a workstream, whether or not anyone has named it one.'}
-    ]
-  }
-];
-
-/* ---------------- goal question (not scored) ---------------- */
-const GOALQ = {
-  id:'goal', kind:'goal',
-  text:'What is the twelve month goal this work has to serve?',
-  help:'Every phase in your plan is filtered through this. Not scored.',
-  opts:{
-    saas:[
-      {t:'Close enterprise deals without security review stalling them'},
-      {t:'Cut the engineering time spent on customer specific policy'},
-      {t:'Pass a customer audit or SOC 2 without a scramble'},
-      {t:'Ship agents to more customers without adding risk'}
-    ],
-    ent:[
-      {t:'Let business units deploy agents without security becoming the bottleneck'},
-      {t:'Produce audit evidence on demand instead of assembling it by hand'},
-      {t:'Get control of the agents that are already running'},
-      {t:'Approve more agent use cases without slowing the business down'}
-    ]
-  }
-};
-
-/* ---------------- scored questions, 2 per category ----------------
-   Condensed from 18 to 12. Where two questions measured the same thing
-   from different sides, they are now one question whose options state
-   BOTH dimensions, so the answer still carries both.
------------------------------------------------------------------- */
+/* ============================================================
+   CONTENT
+   axis 'y' = where the rules live   (scattered  -> one place)
+   axis 'x' = how the rules change   (hardcoded  -> on the fly)
+   v = 0..3. Every option carries the line the reader gets back,
+   because the teaching happens in the answering, not in a preamble.
+   ============================================================ */
 const QS = [
-/* INVENTORY */
-{id:'inv1', cat:'inventory', merged:'what exists, and what each one can reach',
- text:'What could you produce today about the agents running in {ORG}?', opts:[
-  {t:'A live inventory, with what each agent can reach, checked against what it actually calls', v:5, r:'A list checked against real behaviour is the strong version of visibility.'},
-  {t:'A register with each agent declared access, kept up to date by hand', v:4, r:'Declared access tells you what is permitted, not what is happening.'},
-  {t:'A partial picture we would assemble by asking around engineering', v:2, r:'Assembled on request means nobody holds the whole picture.'},
-  {t:'Neither a reliable list nor a map of what they can reach', v:1, r:'If the list cannot be produced, nothing downstream can be complete.'}
-]},
-{id:'inv2', cat:'inventory',
- text:'Who can deploy an agent that touches production data?', opts:[
-  {t:'A short named list, and every deployment is recorded against a person', v:5, r:'Attribution is what turns an incident into a conversation with someone.'},
-  {t:'Engineering only, with a review step', v:4, r:'A review step is a control as long as it is not routinely waived.'},
-  {t:'Any engineering team, with no central record', v:2, r:'Distributed deployment with no central record is how inventories go stale.'},
-  {t:'Anyone with an API key, including outside engineering', v:1, r:'Your agent estate can grow without anyone deciding it should.'}
-]},
-/* TOOLS */
-{id:'tool1', cat:'tools', merged:'what decides a tool call, and how fast that decision can change',
- text:'When an agent calls a tool, what decides whether it is allowed, and how fast can you change that?', opts:[
-  {t:'Policy evaluated at the moment of the call, and changing it is live immediately', v:5, r:'Decided at the call and changeable at the call is the whole game.'},
-  {t:'Permissions set in configuration, changeable the same day with a restart', v:4, r:'Same day, at the cost of an interruption. Workable.'},
-  {t:'The prompt and the model judgement, and changing it means a code release', v:2, r:'A prompt is guidance, and a release is not a response to an urgent request.'},
-  {t:'Nothing but the credential, and the only lever is switching the agent off', v:1, r:'Then the credential is the policy, and your only control is the largest one.'}
-]},
-{id:'tool2', cat:'tools',
- text:'Could you show which tools an agent called last Tuesday, and with what parameters?', opts:[
-  {t:'Yes, per call, with parameters, in minutes', v:5, r:'That is the answer an enterprise security reviewer is hoping for.'},
-  {t:'Yes, from application logs, with some work', v:4, r:'Retrievable with work means retrievable late, and only while someone has time.'},
-  {t:'Partly. We would see something ran, not what it did', v:2, r:'Knowing an action happened without knowing what it did is not evidence.'},
-  {t:'No', v:1, r:'Without the call record there is nothing to reconstruct afterwards.'}
-]},
-/* AUTONOMY */
-{id:'aut1', cat:'autonomy', merged:'where the boundary sits, and where the boundary lives',
- text:'Where is the line between what your agents do unattended and what needs a person, and where does that line live?', opts:[
-  {t:'A defined list, held as policy that {P} can edit directly', v:5, r:'A boundary owned by the accountable team is one that stays current.'},
-  {t:'Broadly defined, held in configuration that engineering can change', v:4, r:'Sensible shape. The risk sits in what counts as broadly.'},
-  {t:'It varies by agent, and it lives in the code and the prompt', v:2, r:'Then the boundary is a property of the builder, not of the business.'},
-  {t:'There is no stated line. Agents can do whatever the tools allow', v:1, r:'The tool list is the boundary, and nobody chose it as one.'}
-]},
-{id:'aut2', cat:'autonomy',
- text:'Has an agent ever done something you did not expect in production?', opts:[
-  {t:'Yes, and a control caught it before it completed', v:5, r:'That is the control working. Most teams never get to say it.'},
-  {t:'Yes, and we found it afterwards in review', v:4, r:'Found afterwards is honest, and it is still after.'},
-  {t:'Not that we know of, and {WHO} would probably tell us first', v:2, r:'Learning it from outside is the expensive way to find out.'},
-  {t:'We would have no way of knowing', v:1, r:'Nothing reported is not the same as nothing happened.'}
-]},
-/* DATA */
-{id:'dat1', cat:'data', merged:'how tightly access is scoped, and how fast it can be cut',
- text:'How tightly is each agent data access scoped, and how quickly could you cut it?', opts:[
-  {t:'Scoped per agent and reviewed, revocable in minutes by someone outside engineering', v:5, r:'Scoped, reviewed and revocable is the full set, and it is rare.'},
-  {t:'Mostly scoped with some shared accounts, revocable by engineering without a release', v:4, r:'Shared accounts are where per agent attribution quietly ends.'},
-  {t:'Agents inherit a broad application role, and narrowing it needs a release', v:2, r:'So the speed of containment is set by your release calendar.'},
-  {t:'Agents use the platform own credentials, and cutting access means a rewrite', v:1, r:'At that point the agent is indistinguishable from the application in any log.'}
-]},
-{id:'dat2', cat:'data',
- text:'Is agent access to sensitive records logged in a form you could hand to an auditor?', opts:[
-  {t:'Yes, per record, tied to the agent and the request', v:5, r:'Record level attribution is what makes a data question answerable.'},
-  {t:'Yes at query level, not record level', v:4, r:'Query level answers what was asked, not what came back.'},
-  {t:'Only in general application logs', v:2, r:'General logs tell you the system ran. They do not tell you what it saw.'},
-  {t:'No', v:1, r:'Then a data question can only be answered with an assurance.'}
-]},
-/* RUNTIME */
-{id:'run1', cat:'runtime', merged:'what kind of change it is, and how long it takes',
- text:'When {Cs} asks you to restrict which tools an agent can call, what happens and how long does it take?', opts:[
-  {t:'A policy change in a console, live the same day', v:5, r:'That answer ends a security conversation instead of opening one.'},
-  {t:'A configuration change we ship within a week', v:4, r:'A week is defensible. It is also a week of someone waiting.'},
-  {t:'A code change in the next release, so two to six weeks', v:2, r:'A security requirement has just become a delivery date.'},
-  {t:'A scheduled redeploy, a quarter or it does not happen', v:1, r:'At that length the honest answer to the request is no.'}
-]},
-{id:'run2', cat:'runtime',
- text:'Does {P} have any direct control over agent behaviour?', opts:[
-  {t:'Yes. They set and change the rules themselves', v:5, r:'Policy owned by the accountable team is the shape this assessment looks for.'},
-  {t:'They can request changes through a defined process with a time commitment', v:4, r:'A defined process is a real control. It is still a request queue.'},
-  {t:'They review and approve, engineering makes every change', v:2, r:'Approval without the ability to act is responsibility without control.'},
-  {t:'No. Everything goes through our engineering team', v:1, r:'Then engineering is the security team, whether or not anyone has said so.'}
-]},
-/* AUDIT */
-{id:'aud1', cat:'audit', merged:'whether you can prove it, and what proving it costs',
- text:'If a CISO asked you to prove an agent only accessed what it was supposed to, could you, and how long would it take?', opts:[
-  {t:'Yes, generated on demand from a tamper evident log', v:5, r:'On demand turns evidence from a project into a button.'},
-  {t:'Yes, with a day or two of engineering pulling logs together', v:4, r:'Possible, and it costs engineering time on someone else schedule.'},
-  {t:'Partly, and it would take a week across several people', v:2, r:'Partial evidence tends to generate more questions than it answers.'},
-  {t:'No. We have not managed to produce it', v:1, r:'Then the first serious review sets the timetable, not you.'}
-]},
-{id:'aud2', cat:'audit',
- text:'Does your record show why an action was allowed, not only that it happened?', opts:[
-  {t:'Yes. The rule and its version are recorded with the action', v:5, r:'The rule that allowed it is the part hand built logs almost always miss.'},
-  {t:'We could reconstruct it from the configuration at the time', v:4, r:'Reconstruction is an argument. A record is not.'},
-  {t:'We have the action, not the reason', v:2, r:'Without the reason you can show what happened but not that it was permitted.'},
-  {t:'We do not have a reliable record of the action', v:1, r:'Then there is nothing to attach a reason to.'}
-]}
+  {
+    id:'q1', axis:null, tag:'First, the only question that gates the rest',
+    q:'How many of your agents take actions without a person approving each step?',
+    opts:[
+      {t:'Most of them', v:3, r:'Then the rules are already doing the work, whether or not anyone has written them down.'},
+      {t:'Several', v:2, r:'Past the point where one person can hold what each of them is allowed to do.'},
+      {t:'One or two', v:1, r:'The first unattended agent is where governance stops being theoretical.'},
+      {t:'None yet, a person checks everything', v:0, r:''}
+    ]
+  },
+  {
+    id:'q2', axis:'y', tag:'<u>Where your rules live</u> &middot; 1 of 3',
+    q:'How many places are your agent rules actually written down?',
+    opts:[
+      {t:'One place, and every agent reads from it', v:3, r:'That is a control plane. Rare, and everything else in this check leans on it.'},
+      {t:'A few places, roughly kept in step', v:2, r:'Roughly in step holds until the day it does not, and nothing tells you which day that was.'},
+      {t:'Every agent has its own', v:1, r:'Then every agent is its own small black hole, and there is no view that covers them all.'},
+      {t:'Nowhere, really', v:0, r:'A rule nobody wrote down cannot be checked, cannot be broken, and cannot be defended.'}
+    ]
+  },
+  {
+    id:'q3', axis:'y', tag:'<u>Where your rules live</u> &middot; 2 of 3',
+    q:'You add a new agent tomorrow. Which of your rules does it get?',
+    opts:[
+      {t:'All of them, automatically', v:3, r:'New agents inheriting the rules is how an estate stays governed while it grows.'},
+      {t:'Some, copied across by hand', v:2, r:'A copy drifts from its original, and nobody gets told which one is now current.'},
+      {t:'Whatever its builder decides', v:1, r:'So your security posture is set by whoever happened to have time that week.'},
+      {t:'None. We would deal with it later', v:0, r:'Later usually arrives with a customer security questionnaire attached to it.'}
+    ]
+  },
+  {
+    id:'q4', axis:'y', tag:'<u>Where your rules live</u> &middot; 3 of 3',
+    q:'Could you see everything your agents did yesterday in one view?',
+    opts:[
+      {t:'Yes, all of them, one place', v:3, r:'That is the answer that ends a security review instead of extending it.'},
+      {t:'Yes, but across several tools', v:2, r:'Several tools means assembling an answer rather than having one.'},
+      {t:'Only for some agents', v:1, r:'The agents you can see are rarely the ones that surprise you.'},
+      {t:'No', v:0, r:'Then what an agent did yesterday is a matter of trust rather than record.'}
+    ]
+  },
+  {
+    id:'q5', axis:'x', tag:'<u>How your rules change</u> &middot; 1 of 3',
+    q:'Someone asks you to restrict what an agent can do. What happens, and how long does it take?',
+    opts:[
+      {t:'Security edits a policy. Live today.', v:3, r:'That answer closes a security conversation instead of opening a project.'},
+      {t:'Engineering changes config. Same week.', v:2, r:'Same week is competitive. It still spends an engineer who was doing something else.'},
+      {t:'Code change, next release', v:1, r:'A security requirement has just turned into a delivery date.'},
+      {t:'Full redeploy, scheduled', v:0, r:'The request now has a queue position rather than an answer.'}
+    ]
+  },
+  {
+    id:'q6', axis:'x', tag:'<u>How your rules change</u> &middot; 2 of 3', byop:true,
+    q:'Do different customers or teams need different rules for their own users?',
+    opts:[
+      {t:'Yes, and each one gets its own policy profile', v:3, r:'That is bring your own policy working the way it is supposed to.'},
+      {t:'Yes, and we build each one by hand', v:1, r:'So every new customer costs engineering time before it earns any revenue.'},
+      {t:'Yes, but everyone gets the same rules', v:1, r:'Then your strictest customer quietly sets the ceiling for all the others.'},
+      {t:'No, one set of rules covers everyone', v:2, r:'Worth watching. The first serious enterprise customer usually changes that answer.'}
+    ]
+  },
+  {
+    id:'q7', axis:'x', tag:'<u>How your rules change</u> &middot; 3 of 3',
+    q:'You switch AI model or provider. What happens to your rules?',
+    opts:[
+      {t:'Nothing. They sit above the model.', v:3, r:'The policy outliving the technology is the entire point of a control plane.'},
+      {t:'Some get rewritten', v:2, r:'Some rewriting means some quiet gaps while the rewriting is happening.'},
+      {t:'All of them get rebuilt', v:0, r:'Your rules are tied to a technology that changes every few months.'},
+      {t:'We have not thought about it', v:1, r:'Worth thinking about before the model choice gets made for you.'}
+    ]
+  }
 ];
 
-/* turnaround days used by the load maths, keyed to the run1 answer value */
-const TURNAROUND = {
-  5:{lo:1,  hi:1,  label:'same day'},
-  4:{lo:2,  hi:7,  label:'within a week'},
-  2:{lo:14, hi:42, label:'two to six weeks'},
-  1:{lo:60, hi:90, label:'a quarter or longer'}
+const BOXES = {
+  control:{
+    el:'qd-control', name:'Control plane', tone:'',
+    sub:'One place &middot; changes on the fly',
+    body:'Your rules live in one place and change without a release. This is where bring your own policy puts a company, and it is the position everything in this check is measuring against. The work from here is keeping it true as the estate grows, and being able to prove it held.'
+  },
+  locked:{
+    el:'qd-locked', name:'Locked down', tone:'v-mid',
+    sub:'One place &middot; hardcoded',
+    body:'You know where your rules are, which is most of the battle and more than most teams can say. Changing them is the problem: every restriction anyone asks for waits on an engineering release, so your security posture moves at the speed of your roadmap.'
+  },
+  patch:{
+    el:'qd-patch', name:'Patchwork', tone:'v-mid',
+    sub:'Scattered &middot; changes on the fly',
+    body:'You can change rules quickly, but each team changes their own. That feels fast right up until someone asks a question that spans all of them, and the honest answer has to be assembled team by team. The gaps between the pieces are where the black holes form.'
+  },
+  holes:{
+    el:'qd-holes', name:'Black holes', tone:'v-bad',
+    sub:'Scattered &middot; hardcoded',
+    body:'Rules are scattered and every change needs engineering. Nobody can say with confidence what every agent is allowed to do today, and the fix for anything you do find is a release away. This is the common position, not the embarrassing one, but it is the one that surfaces under external pressure.'
+  }
 };
 
-/* ranking weights, printed in the report */
-const RANKW = {gap:35, weight:25, speed:20, fit:20};
+/* ============================================================
+   STATE
+   ============================================================ */
+const A = {};            /* question id -> chosen option index */
+let idx = 0;
+let awaiting = false;
 
-/* phases */
-const PHASES = [
-  {n:'Phase 1', when:'Weeks 1 to 3', title:'Prove it on one agent',
-   owner:'Your platform engineer with Skyrelis onboarding',
-   cut:30,
-   what:['Put the gateway in the path of one production agent.','Turn on inventory and the action record for that agent only.','Write the first policy as a copy of the rule you already enforce by review.']},
-  {n:'Phase 2', when:'Weeks 4 to 8', title:'Move the boundary out of the code',
-   owner:'Security lead, with engineering supporting rather than delivering',
-   cut:60,
-   what:['Bring the remaining production agents behind the same gate.','Move approval gates and data scopes from configuration into policy.','Hand policy editing to the team accountable for the rules.']},
-  {n:'Phase 3', when:'Weeks 9 to 12', title:'Make the evidence routine',
-   owner:'Compliance or security operations, with no engineering dependency',
-   cut:85,
-   what:['Generate the evidence pack from the record rather than assembling it.','Publish the change process so a request has a same day path.','Review scope and boundaries on a set schedule instead of on incident.']}
-];
+const $ = id => document.getElementById(id);
 
-/* the eight intro call questions. Draft, editable in settings. */
-const CALLQS = [
-  {q:'Walk me through what your agents actually do in production today.', tag:'ICP'},
-  {q:'You scored lowest on {WEAK}. What does that look like on a normal week?', tag:'ICP'},
-  {q:'When a customer or an auditor asks for controls, who picks that up?', tag:'ICP'},
-  {q:'Has a security review ever slowed a deal or a rollout down? What happened?', tag:'ICP'},
-  {q:'Who would need to be in the room to change how policy gets set?', tag:'ICP'},
-  {q:'What have you already tried here, and what did it cost you?', tag:'Both'},
-  {q:'What is the agentic security story you would want to tell publicly in six months?', tag:'Podcast'},
-  {q:'Who else in your network is dealing with the same thing?', tag:'Podcast'}
-];
-
-const GATE_DEFS = [
-  {id:'gate1', label:'Agents in production', hint:'They are running agents now, not planning to.'},
-  {id:'gate2', label:'Enterprise governance pressure', hint:'A customer, auditor or board is asking for controls.'},
-  {id:'gate3', label:'Decision maker or champion', hint:'They can either sign or reach the person who signs.'}
-];
-
-const MAGNETS = ['Industry report invite','Scorecard walkthrough','Pressure test session'];
-
-const PIPE_STAGES = ['Cold','Outreach sent','Assessment completed','Session booked','Session done','Qualified lead','Discovery call','Active opportunity'];
-
-const GLOSSARY = [
-  ['Agent','A system that decides what to do next and then acts, usually by calling tools or reading data, rather than only producing text.'],
-  ['Runtime','While the agent is running. A runtime control is one that applies at the moment of an action, not at the moment of a code review.'],
-  ['Policy gate','The point every agent action passes through so it can be permitted, held for a human, or refused.'],
-  ['Tool call','An agent using something outside itself: an API, a database, an email send, a payment. The moment it acts on the world.'],
-  ['Autonomy boundary','The line between what an agent may do unattended and what stops for a human.'],
-  ['Bring Your Own Policy','The customer or the security team defines the rules, and the platform enforces them, so the rules do not have to be built into the product.'],
-  ['Audit evidence','A record showing what an agent did and which rule allowed it, in a form someone outside your team will accept.'],
-  ['Readiness band','One of four labels for your overall score: Governed, Developing, Exposed, Critical. Each has a stated range and a stated meaning.'],
-  ['Weighted score','Each category average is turned into a share of 100 using its weight. Inventory, Tools and Runtime carry 20 percent each, Autonomy and Data 15 percent each, Audit 10 percent.'],
-  ['Gap','A single answer scoring 3 or below out of 5. Gaps are listed individually in Part 4, worst first.'],
-  ['Blind spot','A risk that two of your answers create together, which neither answer shows on its own.'],
-  ['Contributor','Anyone who completes this assessment. Answers join the industry report dataset without a name attached.'],
-  ['Typed answer','Anything written in the own words box. It is quoted in the report exactly as written and never scored, because a sentence has no position on a 1 to 5 scale. A typed figure on a sizing question is the exception: it is read as your number.'],
-  ['Estimated score','A category where both questions were answered in words only. It carries no measurement of its own, so it shows the average of your other categories, marked with the sign for approximately.']
-];
-
-/* demo pipeline records so the operator screens are not empty */
-const DEMO_CONTACTS = [
-  {id:'d1', first:'Maya', last:'Okonjo', email:'maya@northbeamagents.example', company:'Northbeam Agents', role:'CTO', lane:'saas', score:71, cats:{inventory:4.0,tools:3.7,autonomy:3.3,data:4.0,runtime:2.3,audit:2.7}, date:'2026-07-24', stage:'Session booked', gates:{gate1:'pass',gate2:'pass',gate3:'unknown'}, booked:true, source:'email_outreach', variant:'B', reply:'replied', calls:[{date:'2026-07-25',outcome:'Book pressure test',notes:'Two enterprise deals waiting on a security questionnaire. Runtime is the whole conversation.'}]},
-  {id:'d2', first:'Tom', last:'Bridger', email:'tbridger@vantiqlabs.example', company:'Vantiq Labs', role:'VP Engineering', lane:'saas', score:54, cats:{inventory:3.3,tools:2.7,autonomy:3.0,data:3.3,runtime:2.0,audit:2.0}, date:'2026-07-23', stage:'Assessment completed', gates:{gate1:'pass',gate2:'unknown',gate3:'unknown'}, booked:false, source:'linkedin', variant:'A', reply:'no reply', calls:[]},
-  {id:'d3', first:'Priya', last:'Raman', email:'praman@helioscare.example', company:'Helios Care Group', role:'Head of Security', lane:'ent', score:38, cats:{inventory:2.0,tools:2.0,autonomy:2.3,data:2.7,runtime:1.7,audit:1.3}, date:'2026-07-22', stage:'Qualified lead', gates:{gate1:'pass',gate2:'pass',gate3:'pass'}, booked:true, source:'email_outreach', variant:'C', reply:'replied', calls:[{date:'2026-07-23',outcome:'Book pressure test',notes:'Fourteen agents across HR and service. Nobody owns the list. Audit evidence assembled by hand each quarter.'}]},
-  {id:'d4', first:'Daniel', last:'Ferreira', email:'d.ferreira@arcbridge.example', company:'Arcbridge Systems', role:'CISO', lane:'ent', score:66, cats:{inventory:3.7,tools:3.3,autonomy:3.7,data:3.3,runtime:2.7,audit:3.0}, date:'2026-07-21', stage:'Session done', gates:{gate1:'pass',gate2:'pass',gate3:'pass'}, booked:true, source:'referral', variant:'B', reply:'replied', calls:[{date:'2026-07-22',outcome:'Follow up',notes:'Wants the evidence story first. Policy ownership already sits with his team, which is unusual.'}]},
-  {id:'d5', first:'Sofia', last:'Klein', email:'sofia@lumenrev.example', company:'Lumen RevOps', role:'Founder', lane:'saas', score:29, cats:{inventory:1.7,tools:1.7,autonomy:2.0,data:1.7,runtime:1.3,audit:1.0}, date:'2026-07-21', stage:'Assessment completed', gates:{gate1:'pass',gate2:'unknown',gate3:'pass'}, booked:false, source:'direct', variant:'A', reply:'replied', calls:[]},
-  {id:'d6', first:'Ade', last:'Balogun', email:'ade@quorumhr.example', company:'Quorum HR Cloud', role:'Director of Platform', lane:'ent', score:61, cats:{inventory:3.7,tools:3.0,autonomy:3.3,data:3.7,runtime:2.3,audit:2.3}, date:'2026-07-20', stage:'Discovery call', gates:{gate1:'pass',gate2:'pass',gate3:'unknown'}, booked:true, source:'email_outreach', variant:'B', reply:'replied', calls:[{date:'2026-07-21',outcome:'Follow up',notes:'Needs his security lead in the next call. Budget conversation is Q4.'}]},
-  {id:'d7', first:'Chen', last:'Wei', email:'chen.wei@driftpoint.example', company:'Driftpoint AI', role:'Head of Product', lane:'saas', score:47, cats:{inventory:2.7,tools:2.3,autonomy:2.7,data:2.7,runtime:1.7,audit:1.7}, date:'2026-07-19', stage:'Outreach sent', gates:{gate1:'pass',gate2:'unknown',gate3:'fail'}, booked:false, source:'linkedin', variant:'C', reply:'no reply', calls:[]},
-  {id:'d8', first:'Rachel', last:'Amonoo', email:'r.amonoo@stanfieldbank.example', company:'Stanfield Bank', role:'Enterprise Architect', lane:'ent', score:78, cats:{inventory:4.3,tools:4.0,autonomy:4.0,data:4.3,runtime:3.7,audit:3.3}, date:'2026-07-18', stage:'Active opportunity', gates:{gate1:'pass',gate2:'pass',gate3:'pass'}, booked:true, source:'referral', variant:'B', reply:'replied', calls:[{date:'2026-07-19',outcome:'Book pressure test',notes:'Mature already. Interest is in evidence generation and proving policy version at audit.'}]},
-  {id:'d9', first:'Luis', last:'Ortega', email:'luis@meridiansales.example', company:'Meridian Sales AI', role:'Co-founder', lane:'saas', score:43, cats:{inventory:2.3,tools:2.3,autonomy:2.3,data:2.7,runtime:1.7,audit:1.3}, date:'2026-07-17', stage:'Cold', gates:{gate1:'unknown',gate2:'unknown',gate3:'pass'}, booked:false, source:'direct', variant:'A', reply:'no reply', calls:[]}
-];
-</script>
-<script>
-/* =============================================================
-   STATE, NAVIGATION, HOME VISUAL, ASSESSMENT, GATE
-============================================================= */
-const KEY_STATE='sky_state_v3', KEY_CONTACTS='sky_contacts_v3', KEY_SET='sky_settings_v3';
-const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-const S = { lane:null, idx:0, answers:{}, sizing:{}, goal:null, notes:{}, typed:{}, contact:null, done:false, _est:{} };
-
-let SETTINGS = {
-  calendly:'https://calendly.com/skyrelis/pressure-test',
-  weights:{inventory:20,tools:20,autonomy:15,data:15,runtime:20,audit:10},
-  bands:{governed:75,developing:50,exposed:25}
-};
-try{ const s=JSON.parse(localStorage.getItem(KEY_SET)||'null'); if(s) SETTINGS=Object.assign(SETTINGS,s); }catch(e){}
-
-function $(id){ return document.getElementById(id); }
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function show(id){
-  ['home','assess','gate','report','operator'].forEach(x=>{ const el=$(x); if(el) el.classList.toggle('hide', x!==id); });
-  window.scrollTo({top:0,behavior:REDUCED?'auto':'smooth'});
-}
-function saveState(){
-  try{ localStorage.setItem(KEY_STATE, JSON.stringify({lane:S.lane,idx:S.idx,answers:S.answers,sizing:S.sizing,goal:S.goal,notes:S.notes,typed:S.typed})); }catch(e){}
-}
-function loadContacts(){
-  try{ const c=JSON.parse(localStorage.getItem(KEY_CONTACTS)||'null'); if(Array.isArray(c)) return c; }catch(e){}
-  return [];
-}
-function saveContacts(list){ try{ localStorage.setItem(KEY_CONTACTS, JSON.stringify(list)); }catch(e){} }
-
-/* ---------------- sequence ---------------- */
-function seq(){ return [].concat(SIZING, QS, [GOALQ]); }
-function scoredCount(){ return QS.length; }
-
-/* =============================================================
-   HOME: the runtime gate visual
-============================================================= */
-const GATE_ACTIONS = [
-  {tool:'crm.contact.update', d:'allow', why:'inside scope'},
-  {tool:'db.read customer_pii', d:'block', why:'outside data scope'},
-  {tool:'invoice.pay 12,400', d:'hold', why:'over approval limit'},
-  {tool:'email.send external', d:'allow', why:'template approved'},
-  {tool:'refund.issue 890', d:'hold', why:'needs a human'},
-  {tool:'export.bulk 41,000 rows', d:'block', why:'volume rule'},
-  {tool:'ticket.close', d:'allow', why:'inside scope'},
-  {tool:'admin.role.grant', d:'block', why:'never unattended'}
-];
-let gPos=0, gTimer=null, gOwner='sec';
-function gateOwnerCopy(){
-  if(gOwner==='sec'){
-    $('gateSub').textContent='Rules owned by the security team. Changed at runtime.';
-    $('gateFoot').innerHTML='<b>Rule change requested 09:12. Live 09:14.</b> The security team edited the policy themselves. No code changed, no release, nothing queued.';
-    $('ownSec').classList.add('on'); $('ownEng').classList.remove('on');
-  }else{
-    $('gateSub').textContent='Rules live in the code. Changed by release.';
-    $('gateFoot').innerHTML='<b>Rule change requested 09:12. Live in the next release.</b> Same decisions, same agents. The difference is that someone is now waiting, and an engineer is doing security work instead of product work.';
-    $('ownEng').classList.add('on'); $('ownSec').classList.remove('on');
-  }
-}
-function gateTick(){
-  const a = GATE_ACTIONS[gPos % GATE_ACTIONS.length]; gPos++;
-  const lane=$('actionLane'), vlane=$('verdictLane');
-  if(!lane||!vlane) return;
-  const row=document.createElement('div');
-  row.className='act live';
-  row.innerHTML='<span class="dot"></span><span>'+esc(a.tool)+'</span>';
-  lane.prepend(row);
-  while(lane.children.length>4) lane.removeChild(lane.lastChild);
-  setTimeout(()=>{
-    const v=document.createElement('div');
-    const word = a.d==='allow'?'allowed':(a.d==='hold'?'held for approval':'blocked');
-    v.className='verdict-line '+a.d;
-    v.innerHTML='<span>'+esc(word)+'</span><span class="mute" style="margin-left:auto;font-size:11px">'+esc(a.why)+'</span>';
-    vlane.prepend(v);
-    while(vlane.children.length>4) vlane.removeChild(vlane.lastChild);
-  }, REDUCED?0:520);
-}
-function initGateViz(){
-  gateOwnerCopy();
-  $('ownSec').addEventListener('click',()=>{gOwner='sec';gateOwnerCopy();});
-  $('ownEng').addEventListener('click',()=>{gOwner='eng';gateOwnerCopy();});
-  for(let i=0;i<3;i++) gateTick();
-  if(!REDUCED) gTimer=setInterval(gateTick, 2100);
-}
-
-/* =============================================================
-   ASSESSMENT
-============================================================= */
-function startLane(lane){
-  S.lane=lane; S.idx=0; S.answers={}; S.sizing={}; S.goal=null; S.notes={}; S.typed={}; S.done=false;
-  saveState(); show('assess'); renderQ();
-}
-function currentItem(){ return seq()[S.idx]; }
-function answeredValue(item){
-  if(item.kind==='sizing') return S.sizing[item.id];
-  if(item.kind==='goal') return S.goal;
-  return S.answers[item.id];
-}
-function progress(){
-  const total=seq().length;
-  return {n:S.idx+1, total, pct: Math.round((S.idx/total)*100)};
-}
-function renderProgress(){
-  const item=currentItem(), p=progress();
-  let catLabel='Setup';
-  if(item.kind==='goal') catLabel='Your goal';
-  else if(!item.kind){
-    const ci=CATS.findIndex(c=>c.id===item.cat);
-    catLabel='Category '+(ci+1)+' of 6 · '+CATS[ci].name;
-  }
-  $('pgCat').textContent=catLabel;
-  $('pgQ').textContent='Question '+p.n+' of '+p.total;
-  $('pgPct').textContent=p.pct+'%';
-  $('pgFill').style.width=p.pct+'%';
-  const done={}, tot={};
-  QS.forEach(q=>{
-    tot[q.cat]=(tot[q.cat]||0)+1;
-    if(S.answers[q.id]!==undefined || S.typed[q.id]) done[q.cat]=(done[q.cat]||0)+1;
-  });
-  $('pgDots').innerHTML = CATS.map(c=>{
-    const isNow = !item.kind && item.cat===c.id;
-    const isDone = (done[c.id]||0)===(tot[c.id]||0);
-    return '<span class="catdot '+(isNow?'on':(isDone?'done':''))+'">'+esc(c.name)+'</span>';
-  }).join('');
-}
-function renderQ(){
-  const item=currentItem();
-  if(!item){ openGate(); return; }
-  renderProgress();
-  const lane=S.lane;
-  const cat = item.cat ? CATBY[item.cat] : null;
-  const opts = item.kind==='goal' ? GOALQ.opts[lane] : item.opts;
-  const picked = answeredValue(item);
-
-  let head='';
-  if(cat){
-    head='<div class="qcat"><span>'+esc(cat.name)+'</span><span class="mute">weight '+SETTINGS.weights[cat.id]+'%</span></div>'+
-         '<p class="qframe">'+esc(tok(cat.frame,lane))+'</p>';
-  }else{
-    head='<div class="qcat"><span>'+(item.kind==='goal'?'Your twelve month goal':'Sizing')+'</span></div>';
-  }
-
-  let anchors='';
-  if(cat){
-    anchors='<div class="anchors"><span>'+esc(cat.a1)+'</span><span>'+esc(cat.a5)+'</span></div>';
-  }else if(item.help){
-    anchors='<div class="anchors"><span>'+esc(tok(item.help,lane))+'</span></div>';
-  }
-
-  const optHtml = opts.map((o,i)=>{
-    const isP = (item.kind==='goal') ? (picked===o.t) : (picked!==undefined && picked===o.v && S.notes['_pick_'+item.id]===i);
-    const sel = (item.kind==='goal') ? (picked===o.t) : (S.notes['_pick_'+item.id]===i);
-    return '<button class="opt'+(sel?' picked':'')+'" type="button" data-i="'+i+'">'+
-           '<span class="num">'+(i+1)+'</span><span class="txt">'+esc(tok(o.t,lane))+'</span></button>';
-  }).join('');
-
-  $('qcard').innerHTML =
-    head+
-    '<div class="qtext">'+esc(tok(item.text,lane))+'</div>'+
-    anchors+
-    '<div class="opts" id="optWrap">'+optHtml+'</div>'+
-    '<div id="reactWrap"></div>'+
-    '<div class="ownwords">'+
-      '<div class="owntop"><span class="ownlabel">Or answer in your own words</span>'+
-      '<button class="micbtn hide" type="button" id="micBtn">Speak your answer</button></div>'+
-      '<textarea id="noteText" placeholder="'+esc(item.kind==='sizing'?'A number is enough. We read the figure straight out of what you write.':'Anything the options miss, in your words.')+'"></textarea>'+
-      '<p class="ownrule">Typed answers are quoted in your report word for word and shown in Part 6. '+
-      (item.kind==='sizing'?'A figure you type here is used as your number.':(item.kind==='goal'?'It replaces the tapped option as your goal.':'They are never scored, because a sentence has no position on a 1 to 5 scale.'))+'</p>'+
-    '</div>';
-
-  $('backBtn').classList.toggle('hide', false);
-  $('backBtn').textContent = S.idx===0 ? 'Back to the start' : 'Back';
-
-  const nt=$('noteText');
-  if(nt){
-    nt.value = S.typed[item.id]||'';
-    nt.addEventListener('input',e=>{
-      const v=e.target.value.trim();
-      if(v) S.typed[item.id]=v; else delete S.typed[item.id];
-      saveState(); syncNext();
-    });
-  }
-  initMic(item);
-  syncNext();
-
-  Array.from(document.querySelectorAll('#optWrap .opt')).forEach(btn=>{
-    btn.addEventListener('click',()=>pick(item, parseInt(btn.dataset.i,10)));
-  });
-}
-function syncNext(){
-  const item=currentItem(); if(!item) return;
-  const nb=$('nextBtn'); if(!nb) return;
-  const hasTap = item.kind==='sizing' ? S.sizing[item.id]!==undefined
-               : item.kind==='goal'   ? !!S.goal
-               : S.answers[item.id]!==undefined;
-  const hasTyped = !!S.typed[item.id];
-  nb.disabled = !(hasTap||hasTyped);
-  nb.textContent = (S.idx===seq().length-1) ? 'See my score' : 'Next';
-}
-function advance(){
-  if(S.idx>=seq().length-1){ S.idx=seq().length; saveState(); openGate(); return; }
-  S.idx++; saveState(); renderQ();
-}
-function initMic(item){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const btn=$('micBtn'); if(!btn||!SR) return;
-  btn.classList.remove('hide');
-  let rec=null, on=false;
-  btn.addEventListener('click',()=>{
-    if(on && rec){ rec.stop(); return; }
-    rec=new SR(); rec.lang='en-GB'; rec.interimResults=false;
-    rec.onresult=e=>{
-      const said=Array.from(e.results).map(r=>r[0].transcript).join(' ').trim();
-      const t=$('noteText'); if(!t) return;
-      t.value=(t.value?t.value+' ':'')+said;
-      S.typed[item.id]=t.value.trim(); saveState(); syncNext();
-    };
-    rec.onend=()=>{ on=false; btn.classList.remove('rec'); btn.textContent='Speak your answer'; };
-    rec.onerror=()=>{ on=false; btn.classList.remove('rec'); btn.textContent='Speak your answer'; };
-    rec.start(); on=true; btn.classList.add('rec'); btn.textContent='Listening, tap to stop';
-  });
-}
-let advancing=false;
-function pick(item, i){
-  if(advancing) return;
-  const lane=S.lane;
-  const opts = item.kind==='goal' ? GOALQ.opts[lane] : item.opts;
-  const o = opts[i];
-  S.notes['_pick_'+item.id]=i;
-  if(item.kind==='sizing') S.sizing[item.id]=o.v;
-  else if(item.kind==='goal') S.goal=o.t;
-  else S.answers[item.id]=o.v;
-  saveState();
-
-  Array.from(document.querySelectorAll('#optWrap .opt')).forEach((b,bi)=>b.classList.toggle('picked', bi===i));
-  if(o.r){
-    $('reactWrap').innerHTML='<div class="reaction"><span class="rk">What that tells us</span>'+esc(tok(o.r,lane))+'</div>';
-  }else{
-    $('reactWrap').innerHTML='<div class="reaction"><span class="rk">Noted</span>Every phase in your plan is filtered through this, in your words.</div>';
-  }
-  syncNext();
-  if(S.typed[item.id]) return;   /* they are still writing, so never yank the box away */
-  advancing=true;
-  setTimeout(()=>{ advancing=false; advance(); }, REDUCED?150:1150);
-}
-function goBack(){
-  if(S.idx===0){ show('home'); return; }
-  S.idx--; saveState(); renderQ();
-}
-
-/* =============================================================
-   SCORING
-============================================================= */
-function tapCount(){ return QS.filter(q=>S.answers[q.id]!==undefined).length; }
-function catAverages(){
-  const raw={}, est={};
-  CATS.forEach(c=>{
-    const vals=QS.filter(q=>q.cat===c.id).map(q=>S.answers[q.id]).filter(v=>v!==undefined);
-    raw[c.id]= vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
-  });
-  const known=CATS.map(c=>raw[c.id]).filter(v=>v!==null);
-  const fallback = known.length ? known.reduce((a,b)=>a+b,0)/known.length : 0;
-  const out={};
-  CATS.forEach(c=>{
-    if(raw[c.id]===null){ out[c.id]=fallback; est[c.id]=true; }
-    else out[c.id]=raw[c.id];
-  });
-  S._est=est;
-  return out;
-}
-function sizingValue(id){
-  if(S.sizing[id]!==undefined) return S.sizing[id];
-  const t=S.typed[id];
-  if(t){ const m=String(t).replace(/,/g,'').match(/\d+/); if(m) return parseInt(m[0],10); }
-  return undefined;
-}
-function overallScore(avgs){
-  let total=0;
-  CATS.forEach(c=>{ total += (avgs[c.id]/5) * SETTINGS.weights[c.id]; });
-  return Math.round(total);
-}
-function rankedCats(avgs){
-  // every category scored, arithmetic shown in the report
-  return CATS.map(c=>{
-    const gapSize = ((5-avgs[c.id])/4)*10;            // from their answers
-    const bizWeight = (SETTINGS.weights[c.id]/20)*10; // from the stated weighting
-    const s = (gapSize*RANKW.gap + bizWeight*RANKW.weight + c.speed*RANKW.speed + c.fitScore*RANKW.fit)/100;
-    return {cat:c, gapSize, bizWeight, speed:c.speed, fit:c.fitScore, total:s};
-  }).sort((a,b)=>b.total-a.total);
-}
-function topGaps(avgs){
-  const sorted = CATS.slice().sort((a,b)=>{
-    const d = avgs[a.id]-avgs[b.id];
-    if(Math.abs(d)>0.001) return d;
-    // tie break: Runtime and Audit first, they are closest to the product
-    const pri={runtime:0,audit:1};
-    return (pri[a.id]!==undefined?pri[a.id]:9)-(pri[b.id]!==undefined?pri[b.id]:9);
-  });
-  return [sorted[0], sorted[1]];
-}
-function gapAnswers(){
-  return QS.filter(q=>S.answers[q.id]!==undefined && S.answers[q.id]<=3)
-           .map(q=>({q, v:S.answers[q.id], opt:q.opts[S.notes['_pick_'+q.id]]}))
-           .sort((a,b)=>a.v-b.v);
-}
-function loadMaths(){
-  const reqs = sizingValue('requests')||0;
-  const t = TURNAROUND[S.answers.run1] || TURNAROUND[2];
-  return {
-    reqs, perYear:reqs*4, t,
-    typedReqs: S.sizing.requests===undefined && !!S.typed.requests,
-    lo: reqs*4*t.lo, hi: reqs*4*t.hi,
-    agents: sizingValue('agents')||0,
-    typedAgents: S.sizing.agents===undefined && !!S.typed.agents
-  };
-}
-
-/* =============================================================
-   GATE
-============================================================= */
-function openGate(){
-  if(tapCount()===0){
-    $('gateBlock').classList.remove('hide');
-    $('gateForm').classList.add('hide');
-    $('teaseScore').textContent='Not scored';
-    $('teaseBand').innerHTML='<b>Nothing tapped.</b> Every answer was written in your own words.';
-    $('teaseGap').textContent='Your writing is saved. Tap an option on at least one question and the score appears here.';
-    show('gate');
-    return;
-  }
-  $('gateBlock').classList.add('hide');
-  $('gateForm').classList.remove('hide');
-  const avgs=catAverages(), score=overallScore(avgs), band=bandFor(score), gaps=topGaps(avgs);
-  $('teaseScore').textContent = score+' / 100';
-  $('teaseBand').innerHTML = '<b>'+esc(band.name)+'.</b> '+esc(band.meaning);
-  $('teaseGap').textContent = 'Your two largest gaps are '+gaps[0].name+' and '+gaps[1].name+'. Both are expanded in the report, with the work that closes them.';
-  show('gate');
-}
-function unlock(){
-  const f={first:$('fFirst').value.trim(), last:$('fLast').value.trim(), email:$('fEmail').value.trim(),
-           company:$('fCompany').value.trim(), role:$('fRole').value.trim()};
-  const missing=Object.keys(f).filter(k=>!f[k]);
-  const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email);
-  if(missing.length || !emailOk){
-    $('gateErr').classList.remove('hide');
-    $('gateErr').textContent = missing.length
-      ? 'Every field is needed so the report can be addressed and filed correctly. Missing: '+missing.join(', ')+'.'
-      : 'That email address does not look complete. Check it and try again.';
-    return;
-  }
-  $('gateErr').classList.add('hide');
-  const avgs=catAverages(), score=overallScore(avgs);
-  S.contact={
-    id:'live_'+Date.now(), first:f.first, last:f.last, email:f.email, company:f.company, role:f.role,
-    lane:S.lane, score, cats:avgs, date:new Date().toISOString().slice(0,10),
-    stage:'Assessment completed', gates:{gate1:'unknown',gate2:'unknown',gate3:'unknown'},
-    booked:false, source:'direct', variant:'-', reply:'-', calls:[], live:true,
-    answers:Object.assign({},S.answers), sizing:Object.assign({},S.sizing), goal:S.goal,
-    notes:Object.assign({},S.notes), typed:Object.assign({},S.typed), magnets:{}
-  };
-  const list=loadContacts(); list.unshift(S.contact); saveContacts(list);
-  /* fire and forget. Works when deployed, silent when the file is opened from disk. */
+/* Damarie labels a live call with ?ref=acme-maya so the record is
+   identifiable without asking the prospect for anything. */
+const REF = (new URLSearchParams(location.search).get('ref') || '').slice(0, 80);
+let sent = false;
+function send(payload){
+  if(sent) return;
+  sent = true;
+  if(location.protocol !== 'http:' && location.protocol !== 'https:') return;
   try{
-    if(location.protocol==='http:'||location.protocol==='https:'){
-      fetch('/api/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.contact)}).catch(()=>{});
-    }
+    fetch('/api/check', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({ref:REF}, payload))
+    }).catch(() => {});
   }catch(e){}
-  S.done=true;
-  renderReport();
-  show('report');
+}
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function axisFraction(axis){
+  const qs = QS.filter(q => q.axis === axis);
+  const done = qs.filter(q => A[q.id] !== undefined);
+  if(!done.length) return 0.5;
+  const got = done.reduce((s,q) => s + q.opts[A[q.id]].v, 0);
+  return got / (done.length * 3);
+}
+function axisScore(axis){
+  const qs = QS.filter(q => q.axis === axis);
+  return qs.reduce((s,q) => s + (A[q.id] !== undefined ? q.opts[A[q.id]].v : 0), 0);
+}
+function boxKey(){
+  const y = axisFraction('y') >= 0.5;   /* one place */
+  const x = axisFraction('x') >= 0.5;   /* on the fly */
+  if(y && x) return 'control';
+  if(y && !x) return 'locked';
+  if(!y && x) return 'patch';
+  return 'holes';
 }
 
-/* =============================================================
-   BOOT
-============================================================= */
-document.addEventListener('DOMContentLoaded',()=>{
-  initGateViz();
-  Array.from(document.querySelectorAll('.lanecard')).forEach(b=>{
-    b.addEventListener('click',()=>startLane(b.dataset.lane));
-  });
-  const st=$('startTop');
-  if(st) st.addEventListener('click',()=>{
-    const r=$('routes');
-    if(r) window.scrollTo({top:r.getBoundingClientRect().top+window.pageYOffset-90, behavior:REDUCED?'auto':'smooth'});
-  });
-  $('backBtn').addEventListener('click',goBack);
-  $('nextBtn').addEventListener('click',()=>{ if(!$('nextBtn').disabled) advance(); });
-  $('unlockBtn').addEventListener('click',unlock);
-  $('gateBack').addEventListener('click',()=>{ S.idx=seq().length-1; show('assess'); renderQ(); });
-  $('opBtn').addEventListener('click',()=>{ renderOperator('dash'); show('operator'); });
-  Array.from(document.querySelectorAll('#opTabs .optab')).forEach(t=>{
-    t.addEventListener('click',()=>{
-      if(t.dataset.tab==='exit'){ show(S.done?'report':'home'); return; }
-      Array.from(document.querySelectorAll('#opTabs .optab')).forEach(x=>x.classList.toggle('on',x===t));
-      renderOperator(t.dataset.tab);
-    });
-  });
-});
-</script>
-<script>
-/* =============================================================
-   REPORT
-============================================================= */
+function paintMap(placed){
+  const fx = axisFraction('x'), fy = axisFraction('y');
+  const m = $('marker');
+  m.style.left = (6 + fx * 88) + '%';
+  m.style.bottom = (6 + fy * 88) + '%';
+  m.classList.toggle('idle', !placed);
 
-/* Per question gap language. Each gap card carries its own reason,
-   so no two cards share a sentence. */
-const GAPTEXT = {
- inv1:{hurt:'Two things are missing at once: the list of what is running, and the map of what each one can reach. Every control below this assumes both exist.',
-       work:'Turn on runtime discovery so an agent registers itself by running, then map declared reach per agent and compare it against the calls it actually makes.',
-       good:'You can say how many agents are running and what each one may touch, and the gap between declared reach and real behaviour is zero.'},
- inv2:{hurt:'When anyone can add an agent, your estate grows by accident and the inventory is out of date the moment it is written.',
-       work:'Put deployment behind a named owner and record every new agent against a person at the point it starts running.',
-       good:'Every agent in production has a name attached to it and a date it was approved.'},
- tool1:{hurt:'The decision and the ability to change the decision are both weak here. A control you cannot move in a day is the permanent version of itself.',
-        work:'Move the decision to the moment of the call, and hold the rule as policy so revoking one tool from one agent is an edit rather than a release.',
-        good:'A tool call is permitted, held or refused by a rule you can read, and you can change that rule this afternoon without a release.'},
- tool2:{hurt:'The first serious question you will be asked is what did it do. Without the call record the honest answer is that you are not sure.',
-        work:'Record every tool invocation with the agent, the time, the parameters and the rule that allowed it.',
-        good:'You can answer a question about last Tuesday in minutes, without pulling an engineer off delivery.'},
- aut1:{hurt:'The boundary is either undefined or buried where the accountable people cannot reach it, so it cannot be tested, moved or defended.',
-       work:'Write the list of what runs unattended, set everything outside it to stop for a named approver, and hold that list as policy the accountable team edits.',
-       good:'Anyone can read the list of unattended actions, and the person answerable for the boundary is the person who can move it.'},
- aut2:{hurt:'If unexpected behaviour would reach you from outside, you find out at the worst possible moment and in front of an audience.',
-       work:'Put detection in the action path so unexpected behaviour is caught while it is happening, not reported afterwards.',
-       good:'You hear about the exception from your own system before anyone outside notices it.'},
- dat1:{hurt:'Broad access is the finding most likely to turn a routine questionnaire into a full security review, and slow revocation means a problem stays open at the speed of your release calendar.',
-       work:'Scope data access per agent, retire shared service accounts, and make the scope a policy value so it can be narrowed or cut without a code change.',
-       good:'Each agent reaches only what its job needs, and access can be cut in minutes by someone who does not need to open the codebase.'},
- dat2:{hurt:'Without record level logging a data question can only be answered with an assurance, and assurances are what auditors test.',
-       work:'Log agent data access at record level, tied to the agent and the request that caused it.',
-       good:'You can show precisely which records an agent touched and why it was permitted to.'},
- run1:{hurt:'A security requirement that becomes a code change stops being a security conversation and becomes a delivery negotiation, and the elapsed time is time somebody spends waiting.',
-       work:'Decouple policy from code so a restriction is a rule change rather than a release, and put the authority with the person making the request.',
-       good:'A restriction asked for in the morning is enforced the same afternoon, with no roadmap position attached to the answer.'},
- run2:{hurt:'When the accountable security team cannot act, responsibility and control sit with different people, which is where escalations come from.',
-       work:'Hand policy authorship to the security team so they enforce their own rules directly.',
-       good:'The team answerable for the rules writes and changes them without a ticket.'},
- aud1:{hurt:'The proof question is not hypothetical. It arrives with a deal or an audit attached and a deadline, and evidence that takes a week arrives after the reviewer has formed a view.',
-       work:'Generate the evidence from the enforcement record rather than assembling it from application logs, so producing it costs minutes.',
-       good:'Evidence is a download on the day it is asked for, and the time cost does not grow with the number of reviews.'},
- aud2:{hurt:'A record that shows the action but not the rule proves something happened. It does not prove it was allowed.',
-       work:'Attach the policy and its version to every recorded decision so the reason travels with the action.',
-       good:'Every action in the record carries the rule that permitted it, at the version in force at the time.'}
-};
-
-const BANDCOL={green:'--green-l',navy:'--navy-l',amber:'--amber-l',red:'--red-l'};
-function pillFor(c){ return {green:'p-green',navy:'p-navy',amber:'p-amber',red:'p-red'}[c]; }
-function fmt(n){ return Number(n).toLocaleString('en-GB'); }
-function one(n){ return (Math.round(n*10)/10).toFixed(1); }
-function pickedOpt(qid){
-  const q=QS.find(x=>x.id===qid); if(!q) return null;
-  const i=S.notes['_pick_'+qid]; return i===undefined?null:q.opts[i];
-}
-function sizingLabel(id){
-  const it=SIZING.find(s=>s.id===id); const i=S.notes['_pick_'+id];
-  if(it && i!==undefined) return it.opts[i].t;
-  if(S.typed[id]) return 'your own words: ' + S.typed[id];
-  return 'not answered';
-}
-function typedBlock(qid){
-  return S.typed[qid] ? '<div class="typedquote"><span class="tag-typed">Typed</span> '+esc(S.typed[qid])+'</div>' : '';
-}
-function numWord(n){ return ({1:'one',2:'two',3:'three',4:'four'})[n] || String(n); }
-
-/* -------------------- radar -------------------- */
-function radarSVG(avgs){
-  const W=560,H=420,cx=280,cy=200,R=140;
-  const ang=i=>(-90+i*60)*Math.PI/180;
-  let rings='';
-  for(let r=1;r<=5;r++){
-    const pts=[];
-    for(let i=0;i<6;i++){ const a=ang(i), rr=R*(r/5); pts.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)); }
-    rings+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="var(--line)" stroke-width="1"/>';
-  }
-  let spokes='';
-  for(let i=0;i<6;i++){ const a=ang(i);
-    spokes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+R*Math.cos(a)).toFixed(1)+'" y2="'+(cy+R*Math.sin(a)).toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>';
-  }
-  const pts=[];
-  CATS.forEach((c,i)=>{
-    const a=ang(i), rr=R*(Math.max(avgs[c.id],0.15)/5);
-    pts.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1));
-  });
-  let dotsHtml='';
-  CATS.forEach((c,i)=>{
-    const a=ang(i), rr=R*(Math.max(avgs[c.id],0.15)/5);
-    const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a);
-    const weak = avgs[c.id]<=2.5;
-    dotsHtml+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="5" fill="'+(weak?'var(--red-l)':'var(--teal-l)')+'"/>';
-  });
-  let badges='';
-  CATS.forEach((c,i)=>{
-    const a=ang(i), rr=R+30;
-    const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a);
-    badges+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="14" fill="var(--card-3)" stroke="var(--line-2)"/>'+
-            '<text x="'+x.toFixed(1)+'" y="'+(y+4.5).toFixed(1)+'" text-anchor="middle" font-family="ui-monospace,monospace" font-size="13" font-weight="700" fill="var(--teal-l)">'+(i+1)+'</text>';
-  });
-  return '<svg class="radar-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Six category radar chart of your scores">'+
-    rings+spokes+
-    '<polygon points="'+pts.join(' ')+'" fill="rgba(53,214,164,.18)" stroke="var(--teal-l)" stroke-width="2"/>'+
-    dotsHtml+badges+'</svg>';
-}
-function radarBlock(avgs){
-  const keys = CATS.map((c,i)=>
-    '<div class="keyrow"><span class="kb">'+(i+1)+'</span><span class="kt"><b>'+esc(c.name)+' &middot; '+one(avgs[c.id])+' out of 5</b>'+
-    '<span>'+esc(c.core)+'</span></span></div>').join('');
-  const fb = CATS.map(c=>{
-    const pc=(avgs[c.id]/5)*100, weak=avgs[c.id]<=2.5;
-    return '<div class="fbrow"><div class="fbt"><span>'+esc(c.name)+'</span><span class="mono">'+one(avgs[c.id])+' / 5</span></div>'+
-           '<div class="fbtrack"><div class="fbfill" style="width:'+pc.toFixed(0)+'%;background:'+(weak?'var(--red-l)':'var(--teal-l)')+'"></div></div></div>';
-  }).join('');
-  return '<div class="chartbox">'+
-    '<div class="radarlay"><div>'+radarSVG(avgs)+
-      '<div class="radar-fallback">'+fb+'</div>'+
-      '<div class="legend">'+
-        '<span class="li"><svg width="26" height="12" viewBox="0 0 26 12"><circle cx="6" cy="6" r="5" fill="var(--teal-l)"/></svg>Scoring above 2.5</span>'+
-        '<span class="li"><svg width="26" height="12" viewBox="0 0 26 12"><circle cx="6" cy="6" r="5" fill="var(--red-l)"/></svg>Scoring 2.5 or below</span>'+
-      '</div>'+
-    '</div>'+
-    '<div class="keyrows">'+keys+'</div></div>'+
-    '<div class="rulebox"><b>How the shape is drawn.</b> Each numbered point sits at the same share of its spoke as your score is of 5. A category scoring 4 out of 5 reaches 80 percent of the way out. The rings are 1 to 5 counting outward from the centre. Nothing on this chart is a peer average.</div>'+
-  '</div>';
-}
-
-/* -------------------- trajectory -------------------- */
-function trajectoryChart(L){
-  const base=(L.lo+L.hi)/2;
-  if(!base) return '';
-  const vals=[base, base*(1-PHASES[0].cut/100), base*(1-PHASES[1].cut/100), base*(1-PHASES[2].cut/100)];
-  const labels=['Today','After phase 1','After phase 2','After phase 3'];
-  const W=680,H=300,padL=64,padR=24,padT=28,padB=52;
-  const maxY=Math.max(...vals)*1.15||1;
-  const x=i=>padL+i*((W-padL-padR)/(vals.length-1));
-  const y=v=>padT+(1-v/maxY)*(H-padT-padB);
-  let grid='';
-  for(let g=0;g<=4;g++){
-    const v=maxY*g/4, yy=y(v);
-    grid+='<line x1="'+padL+'" y1="'+yy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+yy.toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>'+
-          '<text x="'+(padL-10)+'" y="'+(yy+4).toFixed(1)+'" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="var(--mute)">'+Math.round(v)+'</text>';
-  }
-  const line=vals.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
-  let dots='';
-  vals.forEach((v,i)=>{
-    dots+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="5" fill="var(--teal-l)"/>';
-    const anchor = i===0?'start':(i===vals.length-1?'end':'middle');
-    dots+='<text x="'+x(i).toFixed(1)+'" y="'+(y(v)-14).toFixed(1)+'" text-anchor="'+anchor+'" font-family="ui-monospace,monospace" font-size="12" font-weight="700" fill="var(--ink)">'+Math.round(v)+'</text>';
-    dots+='<text x="'+x(i).toFixed(1)+'" y="'+(H-22)+'" text-anchor="'+anchor+'" font-family="ui-monospace,monospace" font-size="11" fill="var(--mute)">'+labels[i]+'</text>';
-  });
-  return '<div class="chartbox">'+
-    '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Waiting days per year falling across the three phases">'+
-    grid+'<polyline points="'+line+'" fill="none" stroke="var(--teal-l)" stroke-width="2.5"/>'+dots+'</svg>'+
-    '<div class="rulebox"><b>What the line is.</b> Days per year that somebody spends waiting for a policy change, from your own two answers. Each drop is a phase, in the order they run. The reductions of '+PHASES[0].cut+', '+PHASES[1].cut+' and '+PHASES[2].cut+' percent are stated planning assumptions, not measurements, and they are the same assumptions used in the phase cards below.</div>'+
-  '</div>';
-}
-
-/* -------------------- blind spot -------------------- */
-function blindSpot(avgs){
-  const a=avgs;
-  const rules=[
-    {when:()=>a.inventory<=2.5 && a.audit<=2.5,
-     t:'You cannot evidence what you cannot enumerate',
-     b:['Your Inventory answers say there is no reliable list of what is running.',
-        'Your Audit answers say evidence has to be assembled rather than produced.',
-        'Both surface at the same moment: the first time someone asks you to prove a specific agent behaved, you have to establish what exists before you can establish what it did.']},
-    {when:()=>a.runtime<=2.5 && a.tools>=3.5,
-     t:'Controls you cannot move become the permanent version',
-     b:['Your Tools answers show real control over what agents can call.',
-        'Your Runtime answers show that changing those controls needs engineering and a release.',
-        'The two together mean your first exception becomes your standing configuration, because the cost of changing it back is a release nobody schedules.']},
-    {when:()=>a.data<=2.5 && a.autonomy<=2.5,
-     t:'Broad access with an undefined boundary',
-     b:['Your Data answers show agents reaching more than their job needs.',
-        'Your Autonomy answers show no enforced line between unattended and approved.',
-        'Neither is unusual alone. Together they mean the worst case action is available to an agent that nothing is scheduled to stop.']},
-    {when:()=>a.audit<=2.5 && a.autonomy>=3.5,
-     t:'Boundaries you keep but cannot prove',
-     b:['Your Autonomy answers describe real limits on what agents do unattended.',
-        'Your Audit answers say you could not produce the record showing those limits held.',
-        'So the control exists and the proof does not, which is the version that fails a review despite the underlying practice being sound.']},
-    {when:()=>a.runtime<=2.5,
-     t:'Every security requirement arrives as engineering work',
-     b:['Your Runtime answers put policy changes inside the code and inside the release cycle.',
-        'That makes engineering the effective owner of security posture, whether or not anyone has described it that way.',
-        'The exposure is not a single missing control. It is that every future control also has to be built, so the backlog grows with each new requirement.']}
-  ];
-  const r = rules.find(x=>x.when()) || {
-    t:'Your two weakest categories reinforce each other',
-    b:['The lowest scoring areas are not independent.','A gap in one removes the evidence that would reveal the other.','Both surface at the same time, usually under external pressure.']};
-  let extra='';
-  if((S.sizing.agents||0)>=13 && avgs.inventory<=2.5){
-    extra='<div class="rulebox" style="margin-top:12px"><b>One more thing your answers create together.</b> You told us more than a handful of agents are in production and that no reliable inventory exists. The agents you do know about are the ones somebody registered, which means your picture is not a random sample of what is running. It is biased toward the well behaved ones, so your own sense of the estate is more reassuring than the estate is.</div>';
-  }
-  return '<div class="card"><span class="kick kick-t">Your blind spot</span><h3>'+esc(r.t)+'</h3><ul style="margin-top:10px">'+
-         r.b.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
-         '<p class="small mute" style="margin-top:10px">This is listed before the checks below because fixing either half on its own leaves the pair intact.</p>'+
-         '</div>'+extra;
-}
-
-/* -------------------- main render -------------------- */
-function renderReport(){
-  const lane=S.lane, avgs=catAverages(), score=overallScore(avgs), band=bandFor(score);
-  const gaps=topGaps(avgs), ranked=rankedCats(avgs), L=loadMaths(), gapsList=gapAnswers();
-  const c=S.contact, weak=gaps[0];
-  const bandIdx=BANDS.findIndex(b=>b.id===band.id);
-  const nextBand = bandIdx>0 ? BANDS[bandIdx-1] : null;
-  let html='';
-
-  /* header */
-  html+='<div class="rhero"><div class="wrap">'+
-    '<span class="kick kick-t">Agentic security readiness &middot; prepared for '+esc(c.first+' '+c.last)+' at '+esc(c.company)+'</span>'+
-    '<h1 style="max-width:20ch">'+esc(c.company)+' scores '+score+' out of 100</h1>'+
-    '<p class="lead" style="max-width:60ch">'+esc(band.name)+'. '+esc(band.meaning)+'</p>'+
-    '<p class="small mute">Completed '+esc(c.date)+' &middot; '+scoredCount()+' scored questions &middot; route: '+
-      (lane==='saas'?'agents built into a product sold to enterprise':'agents deployed inside your own organisation')+'</p>'+
-  '</div></div>';
-
-  /* part nav */
-  html+='<div class="partnav noprint"><div class="in">'+
-    [['p1','1 The verdict'],['p2','2 The load'],['p3','3 The exposure'],['p4','4 The gaps and the fix'],['p5','5 The plan'],['p6','6 The receipts']]
-      .map(p=>'<button type="button" data-go="'+p[0]+'">'+p[1]+'</button>').join('')+
-  '</div></div>';
-
-  html+='<div class="wrap">';
-
-  /* ---------- PART 1 ---------- */
-  html+='<section class="sec" id="p1">'+
-    '<span class="secnum">Part 1</span><h2>The verdict</h2>'+
-    '<p class="secintro">This part works at category level. It gives your overall score, what the band means, and the six category scores with the answers that produced each one.</p>'+
-    '<div class="explainbox"><div class="t">Your verdict in fifteen seconds</div><ul>'+
-      '<li>You scored <b>'+score+' out of 100</b>, which is <b>'+esc(band.name)+'</b>: '+esc(band.meaning.toLowerCase())+'</li>'+
-      '<li>Your weakest category is <b>'+esc(weak.name)+'</b> at '+one(avgs[weak.id])+' out of 5, followed by <b>'+esc(gaps[1].name)+'</b> at '+one(avgs[gaps[1].id])+'.</li>'+
-      '<li>'+gapsList.length+' individual answers scored 3 or below. Each one is a card in Part 4 with the work that closes it.</li>'+
-      '<li>Your first move is in the card at the end of this part.</li>'+
-    '</ul></div>'+
-
-    '<div class="vbanner">'+
-      '<span class="kick">Readiness band</span>'+
-      '<div class="vword">'+esc(band.name)+'</div>'+
-      '<p class="vmeaning">'+esc(band.meaning)+' Your score of '+score+' sits in the '+band.min+' to '+band.max+' range.</p>'+
-      '<div class="scalestrip"><div class="scalebands">'+
-        BANDS.slice().reverse().map(b=>
-          '<div class="sb'+(b.id===band.id?' you':'')+'">'+
-          (b.id===band.id?'<span class="youmark">YOU &middot; '+score+'</span>':'')+
-          '<b>'+esc(b.name)+'</b><span>'+b.min+' to '+b.max+'</span>'+
-          '<small>'+esc(b.meaning.split('.')[0])+'.</small></div>').join('')+
-      '</div>'+
-      (nextBand?'<p class="small mute" style="margin-top:10px">'+(nextBand.min-score)+' points would move you into '+esc(nextBand.name)+'.</p>':
-                '<p class="small mute" style="margin-top:10px">There is no band above this one. The remaining points are the distance to a perfect score, which no one holds.</p>')+
-      '</div>'+
-    '</div>'+
-
-    '<div class="grid gauto tiles">'+
-      '<div class="tile"><div class="tv">'+score+'</div><div class="tl">Overall readiness out of 100, weighted across six categories</div></div>'+
-      '<div class="tile"><div class="tv">'+one(avgs[weak.id])+'</div><div class="tl">Weakest category: '+esc(weak.name)+', out of 5</div></div>'+
-      '<div class="tile"><div class="tv">'+gapsList.length+'</div><div class="tl">Individual answers scoring 3 or below</div></div>'+
-      '<div class="tile"><div class="tv">'+(L.agents?fmt(L.agents)+'+':'0')+'</div><div class="tl">Agents in production, from your own answer</div></div>'+
-      '<div class="tile"><div class="tv">'+esc(L.t.label)+'</div><div class="tl">Time from a policy request to it being live</div></div>'+
-    '</div>'+
-
-    '<h3 style="margin:30px 0 6px">Your shape across the six categories</h3>'+
-    '<p class="small mute" style="margin-bottom:12px">Six axes, one per category. The further a point sits from the centre, the stronger that category scored.</p>'+
-    radarBlock(avgs)+
-
-    '<h3 style="margin:30px 0 6px">The scorecard</h3>'+
-    '<p class="small mute" style="margin-bottom:12px">Each category is the average of your three answers in it. The shaded strip on every bar is the 2.5 to 3.5 middle, where most teams sit.</p>'+
-    CATS.map(cat=>{
-      const v=avgs[cat.id], pc=(v/5)*100;
-      const col = v<=2.5?'var(--red-l)':(v<3.5?'var(--amber-l)':'var(--teal-l)');
-      const qs=QS.filter(q=>q.cat===cat.id);
-      const tapped=qs.filter(q=>S.answers[q.id]!==undefined).length;
-      const est=!!S._est[cat.id];
-      const quotes = qs.map(q=>{
-        const o=pickedOpt(q.id);
-        return (o?'<div class="quote">'+esc(tok(o.t,lane))+' <span class="mute nowrap">('+o.v+'/5)</span></div>':'')+typedBlock(q.id);
-      }).join('');
-      return '<div class="catrow"><div class="top">'+
-        '<span class="nm">'+esc(cat.name)+'</span>'+
-        '<span class="pill p-grey">weight '+SETTINGS.weights[cat.id]+'%</span>'+
-        '<span class="spacer" style="flex:1"></span>'+
-        '<span class="sc">'+(est?'&asymp; ':'')+one(v)+' / 5</span></div>'+
-        '<div class="bar"><div class="band"></div><div class="fill" style="width:'+pc.toFixed(0)+'%;background:'+col+'"></div></div>'+
-        '<div class="anchorline"><span>'+esc(cat.a1)+'</span><span>'+esc(cat.a5)+'</span></div>'+
-        '<div class="why">'+(est
-          ? '<b>Estimated, not measured.</b> Both questions here were answered in words rather than tapped, and words have no position on a 1 to 5 scale. The '+one(v)+' shown is the average of your other categories, marked with &asymp; wherever it appears. What you wrote is quoted below and in Part 6.'
-          : '<b>Why your score.</b> '+(tapped===qs.length
-              ? 'These are the '+numWord(tapped)+' answers averaged into it.'
-              : 'Averaged from the '+numWord(tapped)+' tapped answer'+(tapped===1?'':'s')+' below. Anything you typed is quoted but not scored.'))+quotes+'</div>'+
-      '</div>';
-    }).join('')+
-
-    '<div class="card" style="margin-top:20px;border-color:rgba(53,214,164,.4)">'+
-      '<span class="kick kick-t">Your first move</span>'+
-      '<h3>'+esc(ranked[0].cat.name)+': '+esc(ranked[0].cat.fitTitle.toLowerCase())+'</h3>'+
-      '<ul style="margin-top:10px">'+
-        '<li>It ranks first on the weighting in Part 4, which balances the size of the gap against how much of your score the category carries, how quickly it moves, and how directly it can be addressed.</li>'+
-        (ranked[0].cat.id!==weak.id
-          ? '<li><b>Note that this is not your weakest category.</b> '+esc(weak.name)+' scored lower at '+one(avgs[weak.id])+' out of 5, but it moves more slowly, so it becomes phase '+(ranked.findIndex(r=>r.cat.id===weak.id)<3?(ranked.findIndex(r=>r.cat.id===weak.id)+1):'work after the ninety days')+' rather than the first move.</li>'
-          : '<li>It is also your weakest category, so the first move and the largest gap are the same thing.</li>')+
-        '<li>'+esc(ranked[0].cat.best)+'</li>'+
-      '</ul>'+
-    '</div>'+
-  '</section>';
-
-  /* ---------- PART 2 ---------- */
-  html+='<section class="sec" id="p2">'+
-    '<span class="secnum">Part 2</span><h2>The load</h2>'+
-    '<p class="secintro">This part works at the level of your own two sizing answers. It is a volume figure, not a cost. Nothing here is priced.</p>';
-  if(L.reqs>0){
-    html+='<div class="explainbox"><div class="t">The working, in full</div><ul>'+
-      '<li>You said policy or permission change requests arrive at a rate of <b>'+esc(sizingLabel('requests'))+'</b> per quarter, which we read as '+L.reqs+' a quarter, or '+L.perYear+' a year.</li>'+
-      '<li>You said a change takes <b>'+esc(L.t.label)+'</b> to go live, which we read as '+L.t.lo+' to '+L.t.hi+' days.</li>'+
-      '<li>Low end: '+L.perYear+' changes &times; '+L.t.lo+' days = <b>'+fmt(L.lo)+' waiting days a year</b>.</li>'+
-      '<li>High end: '+L.perYear+' changes &times; '+L.t.hi+' days = <b>'+fmt(L.hi)+' waiting days a year</b>.</li>'+
-      '<li>A waiting day is a day between someone asking for a rule change and that rule being in force. It is elapsed time, not effort.</li>'+
-    '</ul></div>'+
-    '<div class="grid gauto tiles">'+
-      '<div class="tile"><div class="tv">'+fmt(Math.round((L.lo+L.hi)/2))+'</div><div class="tl">Waiting days a year, midpoint of your range</div></div>'+
-      '<div class="tile"><div class="tv">'+L.perYear+'</div><div class="tl">Policy change requests a year, from your answer</div></div>'+
-      '<div class="tile"><div class="tv">'+esc(L.t.label)+'</div><div class="tl">Your stated turnaround per change</div></div>'+
-    '</div>';
+  Object.values(BOXES).forEach(b => $(b.el).classList.remove('on'));
+  if(placed){
+    const k = boxKey();
+    $(BOXES[k].el).classList.add('on');
+    m.style.background = k === 'holes' ? 'var(--red)' : (k === 'control' ? 'var(--teal)' : 'var(--amber)');
+    $('mapState').textContent = BOXES[k].name.toLowerCase();
   }else{
-    html+='<div class="card"><h3>There is no volume figure to calculate</h3><ul style="margin-top:10px">'+
-      '<li>You answered that no policy or permission change requests have arrived yet.</li>'+
-      '<li>We will not model a figure from a number you did not give us.</li>'+
-      '<li>The question worth asking internally is whether nobody has asked, or whether people have learned that asking does not produce a change.</li>'+
-      '<li>The rest of this report scores your posture on the same basis as everyone else. Only this part is affected.</li>'+
-    '</ul></div>';
+    m.style.background = '';
+    const answered = Object.keys(A).length;
+    $('mapState').textContent = answered ? 'moving' : 'not placed yet';
   }
-  html+='<div class="rulebox" style="margin-top:16px"><b>What this report will not do.</b> It will not convert those days into money. Pricing them honestly needs three figures you have not given us and we will not invent: what an engineering day costs you, the value of a deal or a rollout that a security review delays, and how often a delay actually changes the outcome. Bring those three numbers to a session and the arithmetic takes ten minutes.</div>'+
-  '</section>';
+}
 
-  /* ---------- PART 3 ---------- */
-  html+='<section class="sec" id="p3">'+
-    '<span class="secnum">Part 3</span><h2>The exposure</h2>'+
-    '<p class="secintro">This part names the exposure at category level. Part 4 works at answer level and carries the fixes, so nothing is said twice.</p>'+
-    '<span class="unitline">Category level. One check per category, six in total.</span>'+
-    blindSpot(avgs)+
-    '<h3 style="margin:26px 0 10px">One check per category</h3>'+
-    '<div class="grid g2">'+
-    CATS.map(cat=>{
-      const v=avgs[cat.id];
-      const risk = v<2.5?['High','p-red']:(v<3.5?['Medium','p-amber']:['Low','p-green']);
-      return '<div class="check"><div class="ck">'+esc(cat.name)+' &middot; '+one(v)+' out of 5</div>'+
-        '<h4>'+esc(cat.core)+'</h4>'+
-        '<p class="ex">'+esc(v<3.5?cat.low:cat.best)+'</p>'+
-        '<span class="pill '+risk[1]+'">'+risk[0]+' risk</span></div>';
-    }).join('')+
-    '</div>'+
-    '<div class="rulebox"><b>The rule behind every pill above.</b> A category average under 2.5 out of 5 is High. 2.5 to 3.5 is Medium. 3.5 or above is Low. The same rule is applied to all six, and it is printed once here rather than repeated on each check.</div>'+
-  '</section>';
+function show(which){
+  ['scIntro','scQ','scResult','scExit'].forEach(id => { $(id).hidden = (id !== which); });
+}
 
-  /* ---------- PART 4 ---------- */
-  html+='<section class="sec" id="p4">'+
-    '<span class="secnum">Part 4</span><h2>The gaps and the fix</h2>'+
-    '<p class="secintro">This part works at answer level. Every answer that scored 3 or below appears below in the same format, worst first. No gap gets a shorter version than another: if it was worth flagging, it is worth naming the work and what good looks like.</p>'+
-    '<span class="unitline">Answer level. '+gapsList.length+' gaps found across '+scoredCount()+' questions.</span>'+
-    '<div class="rulebox" style="margin:0 0 18px"><b>What counts as a gap, and what severity means.</b> A gap is a single tapped answer scoring 3 or below out of 5. A question answered only in words has no score, so it cannot be a gap, and what you wrote is carried in Part 6 instead. An answer of 1 or 2 is High severity, because the capability is absent rather than partial. An answer of 3 is Medium, because something exists but does not hold under pressure. Answers of 4 and 5 are not gaps and do not appear here.</div>';
+/* ============================================================
+   QUESTIONS
+   ============================================================ */
+function renderQ(){
+  const q = QS[idx];
+  $('pgTxt').textContent = 'Question ' + (idx + 1) + ' of ' + QS.length;
+  $('pgFill').style.width = ((idx) / QS.length * 100) + '%';
+  $('qTag').innerHTML = q.tag;
+  $('qText').textContent = q.q;
 
-  if(!gapsList.length){
-    html+='<div class="card"><h3>No answer scored 3 or below</h3><p class="small mute" style="margin-top:8px">That is rare and it is worth saying plainly rather than manufacturing a finding. The ranking below still applies, because a category can be strong and still be the fastest place to compound an advantage.</p></div>';
+  $('qOpts').innerHTML = q.opts.map((o,i) =>
+    '<button class="opt' + (A[q.id] === i ? ' picked' : '') + '" type="button" data-i="' + i + '">' +
+      '<span class="key">' + (i + 1) + '</span><span class="lbl">' + esc(o.t) + '</span>' +
+    '</button>'
+  ).join('');
+
+  const chosen = A[q.id];
+  $('qReact').innerHTML = (chosen !== undefined && q.opts[chosen].r)
+    ? '<div class="react"><b>What that tells us</b><p>' + esc(q.opts[chosen].r) + '</p></div>' : '';
+  $('btnNext').hidden = chosen === undefined;
+  $('btnNext').textContent = (idx === QS.length - 1) ? 'See where you land' : 'Next';
+  $('btnBack').textContent = idx === 0 ? 'Back to the start' : 'Back';
+
+  Array.from($('qOpts').children).forEach(b => {
+    b.addEventListener('click', () => pick(parseInt(b.dataset.i, 10)));
+  });
+  paintMap(false);
+}
+
+function pick(i){
+  if(awaiting) return;
+  const q = QS[idx];
+  A[q.id] = i;
+
+  Array.from($('qOpts').children).forEach((b,bi) => b.classList.toggle('picked', bi === i));
+  const r = q.opts[i].r;
+  $('qReact').innerHTML = r ? '<div class="react"><b>What that tells us</b><p>' + esc(r) + '</p></div>' : '';
+  $('btnNext').hidden = false;
+  paintMap(false);
+
+  /* the gate: no unattended agents ends the check honestly */
+  if(q.id === 'q1' && q.opts[i].v === 0){
+    awaiting = true;
+    setTimeout(() => { awaiting = false; show('scExit'); }, 700);
+    return;
   }
-  gapsList.forEach((g,i)=>{
-    const cat=CATBY[g.q.cat], t=GAPTEXT[g.q.id];
-    const sev = g.v<=2 ? ['High','p-red'] : ['Medium','p-amber'];
-    const note = S.notes[g.q.id];
-    html+='<div class="gap">'+
-      '<div class="gaphead"><span class="gn">Gap '+(i+1)+' of '+gapsList.length+'</span>'+
-      '<span class="ga">'+esc(cat.name)+'</span>'+
-      '<span class="spacer" style="flex:1"></span>'+
-      '<span class="pill '+sev[1]+'">'+sev[0]+'</span></div>'+
-      '<div class="gapbody">'+
-        '<div class="gapcol"><div class="ch">The challenge</div><ul>'+
-          '<li><b>In answer to</b>'+esc(tok(g.q.text,lane))+'</li>'+
-          '<li><b>You said</b>'+esc(tok(g.opt?g.opt.t:'',lane))+'</li>'+
-          '<li><b>Flagged in</b>'+esc(cat.name)+', which scored '+one(avgs[cat.id])+' out of 5. This answer scored '+g.v+' out of 5.</li>'+
-          '<li><b>Severity and why</b>'+sev[0]+'. '+(g.v<=2?'The capability is absent rather than partial.':'Something exists, but it does not hold under pressure.')+'</li>'+
-          '<li><b>Why it hurts</b>'+esc(t.hurt)+'</li>'+
-          (S.typed[g.q.id]?'<li><b>Your own words</b>'+esc(S.typed[g.q.id])+'</li>':(note?'<li><b>Your own words</b>'+esc(note)+'</li>':''))+
-        '</ul></div>'+
-        '<div class="gapcol"><div class="ch">The fix</div><ul>'+
-          '<li><b>The work</b>'+esc(t.work)+'</li>'+
-          '<li><b>Why it closes this</b>'+esc(cat.fit)+'</li>'+
-          '<li><b>What good looks like</b>'+esc(t.good)+'</li>'+
-          '<li><b>The capability that carries it</b>'+esc(cat.fitTitle)+'</li>'+
-        '</ul></div>'+
-      '</div></div>';
-  });
+  awaiting = true;
+  setTimeout(() => { awaiting = false; advance(); }, 1150);
+}
 
-  html+='<h3 style="margin:30px 0 8px">Where to start, with the arithmetic</h3>'+
-    '<p class="small mute" style="margin-bottom:6px">All six categories are ranked, not just the winners. The cut into phases is stated rather than the rest being hidden.</p>'+
-    '<div class="rulebox" style="margin:0 0 16px"><b>The weighting.</b> Gap size '+RANKW.gap+' percent, taken from your answers. Category weight '+RANKW.weight+' percent, taken from the assessment weighting. Speed to close '+RANKW.speed+' percent and how directly it can be addressed '+RANKW.fit+' percent, both stated planning assumptions with the reason printed on each row.</div>'+
-    ranked.map((r,i)=>{
-      const dest = i<3 ? 'Becomes phase '+(i+1) : 'Follows the ninety days';
-      return '<div class="rank"><div class="rh"><span class="rn">'+(i+1)+'</span><span class="rt">'+esc(r.cat.name)+'</span>'+
-        '<span class="spacer" style="flex:1"></span><span class="pill p-grey">'+dest+'</span>'+
-        '<span class="sc" style="font-family:var(--mono);color:var(--teal-l);font-weight:700">'+one(r.total)+' / 10</span></div>'+
-        '<div class="maths">'+
-          'gap size <b>'+one(r.gapSize)+'</b> &times; '+RANKW.gap+'% &nbsp;+&nbsp; category weight <b>'+one(r.bizWeight)+'</b> &times; '+RANKW.weight+'% &nbsp;+&nbsp; speed <b>'+r.speed+'</b> &times; '+RANKW.speed+'% &nbsp;+&nbsp; directness <b>'+r.fit+'</b> &times; '+RANKW.fit+'% &nbsp;=&nbsp; <b>'+one(r.total)+'</b>'+
-        '</div>'+
-        '<ul style="margin-top:8px"><li class="small">Gap size comes from your score of '+one(avgs[r.cat.id])+' out of 5 in this category.</li>'+
-        '<li class="small">Speed: '+esc(r.cat.speedWhy)+'</li>'+
-        '<li class="small">Directness: '+esc(r.cat.fitWhy)+'</li></ul>'+
-      '</div>';
-    }).join('')+
-  '</section>';
+function advance(){
+  if(idx >= QS.length - 1){ finish(); return; }
+  idx++; renderQ();
+}
+function back(){
+  if(idx === 0){ show('scIntro'); paintMap(false); return; }
+  idx--; renderQ();
+}
 
-  /* ---------- PART 5 ---------- */
-  const base=(L.lo+L.hi)/2;
-  html+='<section class="sec" id="p5">'+
-    '<span class="secnum">Part 5</span><h2>The plan</h2>'+
-    '<p class="secintro">Ninety days, three phases, each with a named owner. The order comes from the ranking in Part 4 and nothing else.</p>'+
-    '<div class="card" style="border-color:rgba(53,214,164,.4)"><span class="kick kick-t">Your twelve month goal, in your words</span>'+
-      '<h3>'+esc(S.typed.goal||S.goal||'not stated')+'</h3>'+
-      '<p class="small mute" style="margin-top:8px">Every phase below is filtered through this. If a phase does not move this goal, it does not belong in the ninety days.</p></div>'+
+/* ============================================================
+   RESULT
+   ============================================================ */
+function holes(){
+  return QS.filter(q => q.axis && A[q.id] !== undefined && q.opts[A[q.id]].v <= 1)
+           .map(q => ({q, o:q.opts[A[q.id]]}));
+}
 
-    '<div class="grid g2" style="margin-top:16px">'+
-      '<div class="statecard today"><span class="kick">Today</span><ul style="margin-top:8px">'+
-        '<li>Overall readiness '+score+' out of 100, band '+esc(band.name)+'.</li>'+
-        '<li>'+esc(weak.name)+' at '+one(avgs[weak.id])+' out of 5 is the weakest category.</li>'+
-        '<li>'+gapsList.length+' answers scoring 3 or below.</li>'+
-        (L.reqs>0?'<li>Around '+fmt(Math.round(base))+' waiting days a year on policy changes.</li>':'<li>No policy change requests recorded yet.</li>')+
-        '<li>Policy changes take '+esc(L.t.label)+'.</li>'+
-      '</ul></div>'+
-      '<div class="statecard day90"><span class="kick">Day 90</span><ul style="margin-top:8px">'+
-        '<li>Every production agent behind one gate, with an inventory that maintains itself.</li>'+
-        '<li>Approval gates and data scopes held as policy rather than code.</li>'+
-        '<li>Policy authored and changed by the team accountable for it.</li>'+
-        (L.reqs>0?'<li>Waiting days down to around '+fmt(Math.round(base*(1-PHASES[2].cut/100)))+' a year on the stated assumptions.</li>':'<li>A same day path exists for the first request that arrives.</li>')+
-        '<li>Evidence generated from the record instead of assembled by hand.</li>'+
-      '</ul></div>'+
-    '</div>'+
+function finish(){
+  const k = boxKey(), b = BOXES[k], hs = holes();
+  const ySc = axisScore('y'), xSc = axisScore('x');
+  const q6 = A.q6 !== undefined ? QS.find(q => q.id === 'q6').opts[A.q6] : null;
+  const byHand = q6 && q6.t.indexOf('by hand') > -1;
 
-    '<div class="grid g3" style="margin-top:16px">'+
-    PHASES.map((p,i)=>{
-      const target = ranked[i] ? ranked[i].cat.name : '';
-      return '<div class="phase"><span class="pnum">'+esc(p.n)+' &middot; '+esc(p.when)+'</span>'+
-        '<h4>'+esc(p.title)+'</h4>'+
-        '<p class="small mute" style="margin:0 0 8px">Targets '+esc(target)+', ranked '+(i+1)+' in Part 4.</p>'+
-        '<ul>'+p.what.map(w=>'<li class="small">'+esc(w)+'</li>').join('')+'</ul>'+
-        '<p class="small" style="margin:10px 0 0"><b>Owner:</b> '+esc(p.owner)+'</p>'+
-        '<p class="small mute" style="margin:4px 0 0">Assumed reduction in waiting days by the end of this phase: '+p.cut+' percent. Stated planning assumption.</p>'+
-      '</div>';
-    }).join('')+
-    '</div>';
+  let h = '';
+  h += '<span class="kicker">Your position</span>';
+  h += '<div class="verdict ' + b.tone + '">' +
+         '<div class="vname">' + b.name + '</div>' +
+         '<div class="vsub">' + b.sub + '</div>' +
+         '<p class="vbody">' + b.body + '</p>' +
+       '</div>';
 
-  if(L.reqs>0){
-    html+='<h3 style="margin:28px 0 10px">What the ninety days does to the waiting</h3>'+trajectoryChart(L);
-  }
+  h += '<div class="sechead"><h3>How the dot got there</h3>' +
+       '<p>Two scores out of 9, one per axis. Five or more puts you on the strong side of that axis.</p></div>';
+  h += '<div class="byop">' +
+       '<div class="bline"><span class="bn">Y</span><p><b>Where your rules live: ' + ySc + ' out of 9.</b> ' +
+         (ySc >= 5 ? 'One place, near enough to count.' : 'Scattered across agents, teams or tools.') + '</p></div>' +
+       '<div class="bline"><span class="bn">X</span><p><b>How your rules change: ' + xSc + ' out of 9.</b> ' +
+         (xSc >= 5 ? 'Changeable without a release.' : 'Hardcoded, so changes wait on engineering.') + '</p></div>' +
+       '</div>';
 
-  html+='<div class="grid g2" style="margin-top:20px">'+
-      '<div class="card"><span class="kick kick-t">Start small</span><h4>One agent, two weeks</h4>'+
-        '<ul style="margin-top:8px"><li class="small">Pick the agent with the most enterprise attention on it.</li>'+
-        '<li class="small">Put it behind the gate and turn the record on.</li>'+
-        '<li class="small">Write one policy: the rule you already enforce by review.</li>'+
-        '<li class="small">At the end you either have evidence it works on your own stack, or you have learned something specific. Both are worth two weeks.</li></ul></div>'+
-      '<div class="card"><span class="kick kick-t">Why now rather than later</span>'+
-        '<ul style="margin-top:8px">'+
-        '<li class="small">'+(L.agents? 'You have agents in production today, so this is retrofitting rather than designing.':'You are pre production, which is the cheapest moment this will ever be.')+'</li>'+
-        '<li class="small">Every new agent added before the gate exists is another one to bring behind it later.</li>'+
-        '<li class="small">'+esc(L.reqs>0?'Requests are already arriving at '+L.perYear+' a year, and each one currently takes '+L.t.label+'.':'The first request will arrive with a deadline attached and set the timetable for you.')+'</li>'+
-        '</ul></div>'+
-    '</div>'+
-  '</section>';
+  h += '<div class="limits"><h3>What this check can and cannot tell you</h3><ul>' +
+       '<li><b>It can</b> tell you which side of each axis you sit on, and name the specific answers putting you there.</li>' +
+       '<li><b>It cannot</b> be precise. Three questions an axis means one answer moves you by up to a third, so treat the position as a read rather than a measurement.</li>' +
+       '<li><b>Worth saying plainly:</b> the strong box is called Control plane, which is the category Skyrelis sells. The check still reports where your answers put you, including when that is already the top right.</li>' +
+       '</ul></div>';
 
-  /* ---------- PART 6 ---------- */
-  html+='<section class="sec" id="p6">'+
-    '<span class="secnum">Part 6</span><h2>The receipts</h2>'+
-    '<p class="secintro">Every answer you gave, and what it changed. Nothing you told us was decorative.</p>';
-  html+='<div class="rulebox" style="margin:0 0 16px"><b>How your own words were handled.</b> Anything you typed is reproduced here word for word and tagged Typed. A typed figure on a sizing question is used as your number. A typed answer on a scored question is quoted and never scored, because a sentence has no position on a 1 to 5 scale.</div>';
-  SIZING.forEach(s=>{
-    const tappedS=S.sizing[s.id]!==undefined;
-    html+='<div class="receipt"><div class="rq">'+esc(tok(s.text,lane))+'</div>'+
-      '<div class="ra">'+esc(sizingLabel(s.id))+'</div>'+
-      (!tappedS&&S.typed[s.id] ? '<div class="rr"><span class="tag-typed">Typed</span> Your figure was read straight out of what you wrote and used in Part 2.</div>'
-        : '<div class="rr"><span class="tag">Routed, not scored</span> Used in Part 2 and in the Day 90 comparison. It carries no weight in your score.</div>')+
-      (tappedS?typedBlock(s.id):'')+'</div>';
-  });
-  QS.forEach(q=>{
-    const o=pickedOpt(q.id), cat=CATBY[q.cat], typedAns=S.typed[q.id];
-    if(!o && !typedAns){ return; }
-    if(!o){
-      html+='<div class="receipt"><div class="rq">'+esc(tok(q.text,lane))+'</div>'+
-        '<div class="ra">'+esc(typedAns)+'</div>'+
-        '<div class="rr"><span class="tag-typed">Typed, not scored</span> Nothing was tapped here, so this answer carries no number. It is quoted in full, and it is why your '+esc(cat.name)+' score is '+
-        (S._est[cat.id]?'an estimate marked with &asymp;.':'averaged from fewer answers than the others.')+'</div></div>';
-      return;
-    }
-    const isGap=o.v<=3;
-    html+='<div class="receipt"><div class="rq">'+esc(tok(q.text,lane))+'</div>'+
-      '<div class="ra">'+esc(tok(o.t,lane))+'</div>'+
-      '<div class="rr"><span class="tag">'+o.v+' / 5 &middot; '+esc(cat.name)+'</span> '+
-      'Averaged into your '+esc(cat.name)+' score of '+(S._est[cat.id]?'&asymp; ':'')+one(avgs[cat.id])+', which carries '+SETTINGS.weights[cat.id]+' percent of your overall '+score+'. '+
-      (isGap?'Below the threshold, so it also appears as its own card in Part 4.':'Above the gap threshold, so it does not appear in Part 4.')+
-      '</div>'+typedBlock(q.id)+'</div>';
-  });
-  html+='<div class="receipt"><div class="rq">'+esc(GOALQ.text)+'</div><div class="ra">'+esc(S.typed.goal||S.goal||'not stated')+'</div>'+
-    '<div class="rr"><span class="'+(S.typed.goal?'tag-typed':'tag')+'">'+(S.typed.goal?'Typed':'Routed, not scored')+'</span> Quoted at the top of Part 5 in your own words and used to filter the phases.</div></div>'+
-  '</section>';
-
-  /* ---------- APPENDIX ---------- */
-  html+='<section class="sec" id="p7">'+
-    '<span class="secnum">Appendix</span><h2>How to read this report</h2>'+
-    '<div class="grid g2">'+
-      '<div class="card"><h4>If this was forwarded to you</h4><ul style="margin-top:8px">'+
-        '<li class="small">Someone at '+esc(c.company)+' answered '+scoredCount()+' questions about how AI agents are governed while they run.</li>'+
-        '<li class="small">Every score in here comes from those answers. Part 6 shows each one and where it went.</li>'+
-        '<li class="small">There are no peer averages, no industry figures, and no money in this report. Where a figure could not be produced honestly, it says so instead.</li>'+
-      '</ul></div>'+
-      '<div class="card"><h4>What this version can and cannot tell you</h4><ul style="margin-top:8px">'+
-        '<li class="small">It can tell you where your governance is weakest and what the work looks like.</li>'+
-        '<li class="small">It cannot tell you how you compare to peers. That needs the industry dataset, which is still being collected.</li>'+
-        '<li class="small">It cannot see your environment. Every score is your description of it, which is why Part 6 shows the answers rather than hiding them.</li>'+
-        '<li class="small">A pressure test session looks at one real agent workflow, which is the part a questionnaire cannot reach.</li>'+
-      '</ul></div>'+
-    '</div>'+
-    '<h3 style="margin:26px 0 10px">Glossary</h3>'+
-    '<div class="grid g2">'+GLOSSARY.map(g=>'<div class="card flat"><h4>'+esc(g[0])+'</h4><p class="small mute" style="margin:6px 0 0">'+esc(g[1])+'</p></div>').join('')+'</div>'+
-
-    '<div class="closing">'+
-      '<span class="kick kick-t">The one thing to do next</span>'+
-      '<h3>Bring one agent workflow. We will assess it live.</h3>'+
-      '<ul style="margin-top:10px">'+
-        '<li>Thirty minutes, no preparation needed beyond picking the workflow.</li>'+
-        '<li>Start with '+esc(ranked[0].cat.name)+' and '+esc(gaps[1].name)+', because that is where your answers point.</li>'+
-        '<li>Bring whoever would have to approve the change, not only the engineer who would make it.</li>'+
-      '</ul>'+
-      '<div class="btnrow noprint" style="margin-top:16px" id="ctaRow"></div>'+
-      '<p class="footnote">Your answers join the Skyrelis industry report on agentic security readiness, anonymously and without your company name. You get early access when it publishes. Honest by design, including where that costs the sale: if the answer is that you do not need this yet, the report says so.</p>'+
-    '</div>'+
-  '</section>';
-
-  html+='</div>';
-  $('reportBody').innerHTML=html;
-
-  /* part nav without hash links */
-  Array.from(document.querySelectorAll('.partnav button')).forEach(b=>{
-    b.addEventListener('click',()=>{
-      const t=$(b.dataset.go);
-      if(t) window.scrollTo({top: t.getBoundingClientRect().top+window.pageYOffset-110, behavior:REDUCED?'auto':'smooth'});
+  h += '<div class="sechead"><h3>Your black holes</h3>' +
+       '<p>' + (hs.length ? 'The answers where the rules stop being something you can point at.' : 'Nothing here scored in the bottom band.') + '</p></div>';
+  if(hs.length){
+    hs.forEach(x => {
+      h += '<div class="hole">' +
+             '<div class="hq">' + esc(x.q.q) + '</div>' +
+             '<div class="ha">' + esc(x.o.t) + '</div>' +
+             '<div class="hw">' + esc(x.o.r) + '</div>' +
+           '</div>';
     });
+  }else{
+    h += '<div class="hole" style="border-left-color:var(--teal)">' +
+           '<div class="ha">No answer landed in the bottom band.</div>' +
+           '<div class="hw">That is worth saying plainly rather than manufacturing a finding. The gap between where you are and a control plane is narrower than most, which usually makes it a question of proving it rather than building it.</div>' +
+         '</div>';
+  }
+
+  h += '<div class="sechead"><h3>What bring your own policy means here</h3>' +
+       '<p>Skyrelis&rsquo; own framing, in three lines.</p></div>';
+  h += '<div class="byop">' +
+       '<div class="bline"><span class="bn">1</span><p>The rules move out of your code and into one place your security team owns, so a change is an edit rather than a release.</p></div>' +
+       '<div class="bline"><span class="bn">2</span><p>' + (byHand
+          ? 'Each customer gets their own policy profile without you building it by hand, which is the part you said currently costs engineering time.'
+          : 'Each customer or team can carry their own policy profile, so the strictest one stops setting the ceiling for everyone.') + '</p></div>' +
+       '<div class="bline"><span class="bn">3</span><p>Because the policy sits above the model, swapping the AI underneath does not take the rules with it.</p></div>' +
+       '</div>';
+
+  h += '<div class="closer">' +
+         '<h3>' + (k === 'control' ? 'The question worth asking next' : 'The one thing worth doing next') + '</h3>' +
+         '<p style="margin-top:9px;font-size:14.8px;color:var(--ink-2)">' + (k === 'control'
+            ? 'You are in the strong box, so the useful conversation is not about getting control. It is whether you can prove it held, on the day someone asks you to.'
+            : 'Take one agent, the one with the most customer attention on it, and answer a single question: if a restriction was asked for this morning, could it be live this afternoon? That answer is the whole gap, and it takes a fortnight to close for one agent.') +
+         '</p>' +
+       '</div>';
+
+  /* facilitator */
+  const q1v = A.q1 !== undefined ? QS[0].opts[A.q1].v : 0;
+  const slowChange = A.q5 !== undefined && QS.find(q => q.id === 'q5').opts[A.q5].v <= 1;
+  const rebuild = A.q7 !== undefined && QS.find(q => q.id === 'q7').opts[A.q7].v === 0;
+  const book = q1v >= 1 && k !== 'control' && (byHand || slowChange);
+  const strong = byHand && rebuild;
+
+  /* The facilitator read is deliberately NOT rendered here. On a public URL
+     it would show every visitor the qualification logic. It lives at
+     /ops?key=ADMIN_KEY instead, computed server side from the flags below. */
+  send({
+    y:ySc, x:xSc, box:k, boxName:b.name, holes:hs.length,
+    flags:{ unattended:q1v, byHand:!!byHand, slowChange:!!slowChange, rebuild:!!rebuild },
+    answers: QS.filter(q => A[q.id] !== undefined)
+               .map(q => ({ id:q.id, q:q.q, a:q.opts[A[q.id]].t, v:q.opts[A[q.id]].v }))
   });
-  renderActions(score, band, weak, ranked);
+
+  h += '<div class="limits" style="margin-top:26px"><h3>What this version does not do yet</h3><ul>' +
+       '<li><b>It is not in Skyrelis brand.</b> Colours come from the spec, but no real logo or type has been used, because inventing a client mark is worse than leaving it plain.</li>' +
+       '<li><b>The seven questions are a first pass.</b> They have not been checked against the existing Skyrelis scorecard, so some of this may already exist in a better form.</li>' +
+       '<li><b>It reports a position, not a diagnosis.</b> Three questions an axis is enough to start a conversation and not enough to close one.</li>' +
+       '</ul></div>';
+
+  h += '<div class="ctarow">' +
+         '<button class="cta ghost" id="btnRestart">Run it again</button>' +
+       '</div>';
+  h += '<p class="footnote">Every line above comes from the seven answers given, with no benchmarks, no industry averages and no estimated figures. Your answers are recorded without a name or an email address attached, and they go towards an industry picture of how agent governance actually looks. An example built by Navvai to open a conversation, not a finished asset.</p>';
+
+  $('scResult').innerHTML = h;
+  show('scResult');
+  paintMap(true);
+  $('pgFill').style.width = '100%';
+
+  $('btnRestart').addEventListener('click', restart);
+
+  $('mapFoot').innerHTML = 'You landed in <strong>' + b.name + '</strong>. The dot sits where your two scores put it, ' +
+    ySc + ' out of 9 for where the rules live and ' + xSc + ' out of 9 for how they change.';
 }
 
-/* -------------------- end actions, once, at the end -------------------- */
-function renderActions(score, band, weak, ranked){
-  const c=S.contact;
-  const row=$('ctaRow');
-  if(!row) return;
-  const mk=(label,cls,fn)=>{
-    const b=document.createElement('button'); b.type='button'; b.className='btn '+(cls||''); b.textContent=label;
-    b.addEventListener('click',fn); return b;
-  };
-  const book=document.createElement('a');
-  book.className='btn'; book.href=SETTINGS.calendly; book.target='_blank'; book.rel='noopener';
-  book.textContent='Book the 30 minute pressure test';
-  row.appendChild(book);
-
-  row.appendChild(mk('Download this report','ghost',()=>downloadReport()));
-
-  row.appendChild(mk('Email me this report','ghost',()=>{
-    const body=['Your Skyrelis agentic security readiness report.','',
-      'Score: '+score+' out of 100 ('+band.name+')',
-      'Weakest category: '+weak.name,
-      'First move: '+ranked[0].cat.name,
-      '','Full report: open the download from the assessment page.',
-      '','Demo preview: in the live version this sends automatically from Skyrelis on completion.'].join('\n');
-    window.location.href='mailto:'+encodeURIComponent(c.email)+'?subject='+encodeURIComponent('Your agent security readiness report: '+score+'/100')+'&body='+encodeURIComponent(body);
-  }));
-
-  row.appendChild(mk('Send on WhatsApp','ghost',()=>{
-    const t='My agent security readiness score is '+score+'/100 ('+band.name+'). Weakest area: '+weak.name+'.';
-    window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank','noopener');
-  }));
-
-  row.appendChild(mk('Start again','ghost',()=>{
-    try{ localStorage.removeItem(KEY_STATE); }catch(e){}
-    S.lane=null;S.idx=0;S.answers={};S.sizing={};S.goal=null;S.notes={};S.contact=null;S.done=false;
-    show('home');
-  }));
-
-  $('reportActions').innerHTML='<p class="footnote">This preview keeps your record on this device only. In the live version the report is emailed to you on completion and the record is written to the Skyrelis database.</p>';
+function restart(){
+  Object.keys(A).forEach(k => delete A[k]);
+  idx = 0; sent = false;
+  $('mapFoot').innerHTML = 'Two questions decide everything else: <strong>where your agent rules live</strong>, and <strong>how they change</strong>. Nobody really starts in the middle. Seven questions moves this dot.';
+  paintMap(false);
+  show('scIntro');
 }
 
-function downloadReport(){
-  const css=Array.from(document.querySelectorAll('style')).map(s=>s.outerHTML).join('');
-  const body=$('reportBody').cloneNode(true);
-  Array.from(body.querySelectorAll('.noprint')).forEach(n=>n.remove());
-  const html='<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Agent security readiness report</title>'+css+'</head><body>'+body.innerHTML+'</body></html>';
-  const blob=new Blob([html],{type:'text/html'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='agent-security-readiness-'+(S.contact.company||'report').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.html';
-  document.body.appendChild(a); a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},600);
-}
+/* ============================================================
+   WIRING
+   ============================================================ */
+$('btnStart').addEventListener('click', () => { idx = 0; show('scQ'); renderQ(); });
+$('btnBack').addEventListener('click', back);
+$('btnNext').addEventListener('click', () => { if(!awaiting) advance(); });
+$('btnExitRestart').addEventListener('click', restart);
+document.addEventListener('keydown', e => {
+  if($('scQ').hidden) return;
+  const n = parseInt(e.key, 10);
+  if(n >= 1 && n <= QS[idx].opts.length) pick(n - 1);
+});
+paintMap(false);
 </script>
-<script>
-/* =============================================================
-   OPERATOR VIEW
-============================================================= */
-function allContacts(){ return loadContacts().concat(DEMO_CONTACTS); }
-function bandOf(x){ return bandFor(x.score); }
-function weakestOf(x){
-  let w=null;
-  CATS.forEach(c=>{ const v=x.cats[c.id]||0; if(!w||v<w.v) w={id:c.id,name:c.name,v}; });
-  return w;
-}
-function daysSince(d){
-  const ms=Date.now()-new Date(d+'T00:00:00').getTime();
-  return Math.max(0,Math.round(ms/86400000));
-}
-function contactById(id){ return allContacts().find(x=>x.id===id); }
-
-function renderOperator(tab){
-  const el=$('opBody');
-  if(tab==='dash') el.innerHTML=opDash();
-  else if(tab==='pipe') el.innerHTML=opPipe();
-  else if(tab==='set'){ el.innerHTML=opSettings(); wireSettings(); }
-  wireRows();
-}
-function wireRows(){
-  Array.from(document.querySelectorAll('[data-contact]')).forEach(b=>{
-    b.addEventListener('click',()=>openContact(b.dataset.contact));
-  });
-  const ex=$('csvBtn'); if(ex) ex.addEventListener('click',exportCsv);
-  const flt=$('pipeFilter'); if(flt) flt.addEventListener('change',()=>{ $('opBody').innerHTML=opPipe(flt.value); wireRows(); const f2=$('pipeFilter'); if(f2) f2.value=flt.value; });
-}
-
-/* -------------------- dashboard -------------------- */
-function opDash(){
-  const list=allContacts();
-  const today=new Date().toISOString().slice(0,10);
-  const week=list.filter(x=>daysSince(x.date)<=7).length;
-  const dist={};
-  BANDS.forEach(b=>dist[b.id]=0);
-  list.forEach(x=>dist[bandOf(x).id]++);
-  const booked=list.filter(x=>x.booked).length;
-  const hot=list.filter(x=>{ const w=weakestOf(x); return x.score>=70 || (['runtime','audit'].includes(w.id) && w.v<2); });
-  const target=35;
-
-  const variants=['A','B','C'].map(v=>{
-    const sent=list.filter(x=>x.variant===v);
-    const rep=sent.filter(x=>x.reply==='replied').length;
-    return {v, sent:sent.length, rep, rate: sent.length? Math.round(rep/sent.length*100):0};
-  });
-  const best=variants.slice().sort((a,b)=>b.rate-a.rate)[0];
-
-  return '<div class="grid gauto tiles">'+
-    '<div class="tile"><div class="tv">'+list.length+'</div><div class="tl">Assessments completed, all time</div></div>'+
-    '<div class="tile"><div class="tv">'+week+'</div><div class="tl">Completed in the last seven days</div></div>'+
-    '<div class="tile"><div class="tv">'+booked+'</div><div class="tl">Pressure test sessions booked</div></div>'+
-    '<div class="tile"><div class="tv">'+list.length+' / '+target+'</div><div class="tl">Industry report contributors toward the target</div></div>'+
-    '<div class="tile"><div class="tv">'+hot.length+'</div><div class="tl">High intent, flagged for follow up first</div></div>'+
-  '</div>'+
-
-  '<div class="grid g2" style="margin-top:18px">'+
-    '<div class="card"><h3>Readiness band distribution</h3><p class="small mute" style="margin:6px 0 12px">Where every contact sits. The bar length is the share of all completions.</p>'+
-      BANDS.map(b=>{
-        const n=dist[b.id], pc=list.length? (n/list.length*100):0;
-        return '<div class="distrow"><span class="dl">'+esc(b.name)+'</span>'+
-          '<span class="disttrack"><span class="distfill" style="width:'+pc.toFixed(0)+'%;background:var('+BANDCOL[b.colour]+')"></span></span>'+
-          '<span class="mono" style="width:34px;text-align:right">'+n+'</span></div>';
-      }).join('')+
-    '</div>'+
-    '<div class="card"><h3>Outreach variants</h3><p class="small mute" style="margin:6px 0 12px">Reply rate by email variant. Winning variant highlighted.</p>'+
-      variants.map(v=>'<div class="distrow"><span class="dl">Variant '+v.v+(v.v===best.v?' &middot; best':'')+'</span>'+
-        '<span class="disttrack"><span class="distfill" style="width:'+v.rate+'%;background:'+(v.v===best.v?'var(--teal-l)':'var(--navy-l)')+'"></span></span>'+
-        '<span class="mono" style="width:60px;text-align:right">'+v.rate+'% ('+v.rep+'/'+v.sent+')</span></div>').join('')+
-      '<p class="tiny mute" style="margin-top:10px">Demo figures. In the live version this reads from the outreach log.</p>'+
-    '</div>'+
-  '</div>'+
-
-  '<h3 style="margin:26px 0 10px">Follow up first</h3>'+
-  '<p class="small mute" style="margin-bottom:10px">The rule: overall score of 70 or above, or Runtime or Audit scoring below 2 out of 5. Both mean the conversation has somewhere specific to start.</p>'+
-  (hot.length? tableOf(hot) : '<div class="card"><p class="small mute" style="margin:0">Nobody meets the rule right now. That is the honest state, not an empty screen.</p></div>')+
-
-  '<h3 style="margin:26px 0 10px">Recent completions</h3>'+
-  tableOf(list.slice(0,10))+
-  '<div class="btnrow" style="margin-top:14px"><button class="btn ghost sm" type="button" id="csvBtn">Export all contacts as CSV</button></div>';
-}
-
-function tableOf(list){
-  return '<div class="tblwrap"><table class="tbl"><thead><tr>'+
-    '<th>Name</th><th>Company</th><th>Role</th><th>Score</th><th>Band</th><th>Weakest</th><th>Stage</th><th>Days</th><th></th>'+
-    '</tr></thead><tbody>'+
-    list.map(x=>{
-      const b=bandOf(x), w=weakestOf(x);
-      return '<tr><td>'+esc(x.first+' '+x.last)+(x.live?' <span class="pill p-teal" style="padding:1px 7px">Live</span>':'')+'</td>'+
-        '<td>'+esc(x.company)+'</td><td>'+esc(x.role)+'</td>'+
-        '<td><b>'+x.score+'</b></td>'+
-        '<td><span class="pill '+pillFor(b.colour)+'">'+esc(b.name)+'</span></td>'+
-        '<td>'+esc(w.name)+' '+one(w.v)+'</td>'+
-        '<td>'+esc(x.stage)+'</td><td>'+daysSince(x.date)+'</td>'+
-        '<td><button class="rowbtn" type="button" data-contact="'+esc(x.id)+'">Open</button></td></tr>';
-    }).join('')+
-  '</tbody></table></div>';
-}
-
-/* -------------------- pipeline -------------------- */
-function opPipe(filter){
-  const list=allContacts();
-  const f=filter||'all';
-  const shown = f==='all' ? list : list.filter(x=>bandOf(x).id===f);
-  const counts={};
-  PIPE_STAGES.forEach(s=>counts[s]=list.filter(x=>x.stage===s).length);
-  return '<div class="card"><h3>Pipeline</h3>'+
-    '<p class="small mute" style="margin:6px 0 12px">Every contact, in stage order. Filter by readiness band to work one segment at a time.</p>'+
-    '<div class="grid gauto">'+PIPE_STAGES.map(s=>
-      '<div class="tile"><div class="tv" style="font-size:20px">'+counts[s]+'</div><div class="tl">'+esc(s)+'</div></div>').join('')+
-    '</div></div>'+
-    '<div style="margin:16px 0 12px;max-width:280px"><label class="small mute" for="pipeFilter">Filter by readiness band</label>'+
-    '<select id="pipeFilter"><option value="all">All bands</option>'+
-      BANDS.map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('')+
-    '</select></div>'+
-    tableOf(shown);
-}
-
-/* -------------------- contact detail -------------------- */
-function openContact(id){
-  const x=contactById(id); if(!x) return;
-  const b=bandOf(x), w=weakestOf(x);
-  const sorted=CATS.slice().sort((p,q)=>(x.cats[p.id]||0)-(x.cats[q.id]||0));
-  const el=$('opBody');
-  el.innerHTML=
-  '<div class="btnrow" style="margin-bottom:14px">'+
-    '<button class="btn ghost sm" type="button" id="backDash">Back to the dashboard</button>'+
-    '<button class="btn sm" type="button" id="callBtn">Open call mode</button>'+
-  '</div>'+
-  '<div class="card"><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">'+
-    '<div><h3 style="margin:0">'+esc(x.first+' '+x.last)+'</h3>'+
-    '<p class="small mute" style="margin:4px 0 0">'+esc(x.role)+' at '+esc(x.company)+' &middot; '+esc(x.email)+'</p></div>'+
-    '<span class="spacer" style="flex:1"></span>'+
-    '<span class="pill '+pillFor(b.colour)+'">'+esc(b.name)+' &middot; '+x.score+'</span>'+
-    '<span class="pill p-grey">'+esc(x.stage)+'</span>'+
-  '</div></div>'+
-
-  '<div class="grid g2" style="margin-top:14px">'+
-    '<div class="card"><h4>Category scores</h4>'+
-      '<p class="small mute" style="margin:6px 0 10px">Lowest first. This is where the call starts.</p>'+
-      sorted.map(c=>{
-        const v=x.cats[c.id]||0, pc=(v/5)*100;
-        const col=v<=2.5?'var(--red-l)':(v<3.5?'var(--amber-l)':'var(--teal-l)');
-        return '<div class="fbrow"><div class="fbt"><span>'+esc(c.name)+'</span><span>'+one(v)+' / 5</span></div>'+
-        '<div class="fbtrack"><div class="fbfill" style="width:'+pc.toFixed(0)+'%;background:'+col+'"></div></div></div>';
-      }).join('')+
-    '</div>'+
-    '<div class="card"><h4>Qualification gates</h4>'+
-      '<p class="small mute" style="margin:6px 0 10px">Updated during or after the call. Three passes is a qualified lead.</p>'+
-      '<div class="gates">'+GATE_DEFS.map(g=>{
-        const v=(x.gates&&x.gates[g.id])||'unknown';
-        const pc={pass:'p-green',fail:'p-red',unknown:'p-grey'}[v];
-        return '<div class="gaterow"><span><b>'+esc(g.label)+'</b><br><span class="tiny mute">'+esc(g.hint)+'</span></span>'+
-          '<span class="pill '+pc+'">'+esc(v)+'</span></div>';
-      }).join('')+'</div>'+
-      '<p class="small" style="margin-top:12px"><b>Session booked:</b> '+(x.booked?'yes':'not yet')+'</p>'+
-      '<p class="small mute" style="margin:2px 0 0">Source: '+esc(x.source)+' &middot; variant '+esc(x.variant)+' &middot; '+esc(x.reply)+'</p>'+
-    '</div>'+
-  '</div>'+
-
-  '<div class="card" style="margin-top:14px"><h4>Open with this</h4>'+
-    '<ul style="margin-top:8px">'+
-      '<li class="small">Weakest category is <b>'+esc(w.name)+'</b> at '+one(w.v)+' out of 5.</li>'+
-      '<li class="small">'+esc(CATBY[w.id].low)+'</li>'+
-      '<li class="small">Second weakest is '+esc(sorted[1].name)+' at '+one(x.cats[sorted[1].id])+' out of 5.</li>'+
-      (x.live?'<li class="small">This record came from a live completion in this preview, so the full answer set is available in the report.</li>':'<li class="small">Demo record. In the live version every individual answer is listed here, not only the category scores.</li>')+
-    '</ul></div>'+
-
-  '<div class="card" style="margin-top:14px"><h4>Call log</h4>'+
-    (x.calls&&x.calls.length
-      ? x.calls.map(cl=>'<div class="receipt"><div class="rq">'+esc(cl.date)+' &middot; '+esc(cl.outcome)+'</div><div class="rr">'+esc(cl.notes)+'</div></div>').join('')
-      : '<p class="small mute" style="margin:6px 0 0">No calls logged. Open call mode to record the first one.</p>')+
-  '</div>';
-
-  $('backDash').addEventListener('click',()=>{ renderOperator('dash'); });
-  $('callBtn').addEventListener('click',()=>callMode(id));
-  window.scrollTo({top:0,behavior:REDUCED?'auto':'smooth'});
-}
-
-/* -------------------- live call mode -------------------- */
-function callMode(id){
-  const x=contactById(id); if(!x) return;
-  const w=weakestOf(x);
-  const sorted=CATS.slice().sort((p,q)=>(x.cats[p.id]||0)-(x.cats[q.id]||0));
-  $('opBody').innerHTML=
-  '<div class="btnrow" style="margin-bottom:14px"><button class="btn ghost sm" type="button" id="backC">Back to the contact</button></div>'+
-  '<div class="demoband"><b>Call mode.</b> Their results on the left, your questions on the right. Everything typed here is saved to the contact record on this device. In the live version it writes to the database and updates the pipeline stage.</div>'+
-  '<div class="splitcall">'+
-    '<div>'+
-      '<div class="card"><h4>'+esc(x.first+' '+x.last)+' &middot; '+esc(x.company)+'</h4>'+
-        '<p class="small mute" style="margin:6px 0 12px">'+x.score+' out of 100. Weakest: '+esc(w.name)+' at '+one(w.v)+' out of 5.</p>'+
-        sorted.map(c=>{
-          const v=x.cats[c.id]||0, pc=(v/5)*100;
-          const col=v<=2.5?'var(--red-l)':(v<3.5?'var(--amber-l)':'var(--teal-l)');
-          return '<div class="fbrow"><div class="fbt"><span>'+esc(c.name)+'</span><span>'+one(v)+' / 5</span></div>'+
-          '<div class="fbtrack"><div class="fbfill" style="width:'+pc.toFixed(0)+'%;background:'+col+'"></div></div></div>';
-        }).join('')+
-      '</div>'+
-      '<div class="card" style="margin-top:14px"><h4>Gates</h4><div class="gates" style="margin-top:8px">'+
-        GATE_DEFS.map(g=>'<div class="gaterow"><span>'+esc(g.label)+'</span>'+
-          '<select data-gate="'+g.id+'">'+['unknown','pass','fail'].map(v=>
-            '<option value="'+v+'"'+(((x.gates&&x.gates[g.id])||'unknown')===v?' selected':'')+'>'+v+'</option>').join('')+
-          '</select></div>').join('')+
-      '</div></div>'+
-      '<div class="card" style="margin-top:14px"><h4>Lead magnets offered</h4><div class="magnets" style="margin-top:8px">'+
-        MAGNETS.map((m,i)=>'<button class="magnet'+((x.magnets&&x.magnets[m])?' on':'')+'" type="button" data-magnet="'+esc(m)+'">'+esc(m)+'</button>').join('')+
-      '</div><p class="tiny mute" style="margin-top:8px">Tap once for offered, again to clear.</p></div>'+
-    '</div>'+
-    '<div>'+
-      '<div class="card"><h4>Intro call questions</h4>'+
-      '<p class="tiny mute" style="margin:6px 0 12px">Draft set. Editable in Settings in the live version, so this becomes Jaz\'s own script rather than a placeholder.</p>'+
-      CALLQS.map((q,i)=>'<div class="callq"><span class="pill p-grey">'+esc(q.tag)+'</span>'+
-        '<div class="qq" style="margin-top:6px">'+esc(q.q.replace('{WEAK}',w.name))+'</div>'+
-        '<textarea data-note="'+i+'" placeholder="Notes"></textarea></div>').join('')+
-      '</div>'+
-      '<div class="card" style="margin-top:14px"><h4>Outcome</h4>'+
-        '<select id="outcomeSel" style="margin-top:8px">'+
-          ['Book recording','Book pressure test','Follow up','Passed','Not interested'].map(o=>'<option>'+o+'</option>').join('')+
-        '</select>'+
-        '<div style="margin-top:10px"><textarea id="callSummary" placeholder="One line summary for the record"></textarea></div>'+
-        '<div class="btnrow" style="margin-top:12px"><button class="btn" type="button" id="saveCall">Save and exit</button></div>'+
-      '</div>'+
-    '</div>'+
-  '</div>';
-
-  $('backC').addEventListener('click',()=>openContact(id));
-  Array.from(document.querySelectorAll('[data-magnet]')).forEach(b=>{
-    b.addEventListener('click',()=>b.classList.toggle('on'));
-  });
-  $('saveCall').addEventListener('click',()=>{
-    const live=loadContacts();
-    const rec=live.find(r=>r.id===id);
-    const notes=Array.from(document.querySelectorAll('[data-note]')).map((t,i)=>t.value.trim()?CALLQS[i].q+' : '+t.value.trim():'').filter(Boolean).join(' | ');
-    const gates={}; Array.from(document.querySelectorAll('[data-gate]')).forEach(s=>gates[s.dataset.gate]=s.value);
-    const magnets={}; Array.from(document.querySelectorAll('[data-magnet]')).forEach(b=>{ if(b.classList.contains('on')) magnets[b.dataset.magnet]=true; });
-    const entry={date:new Date().toISOString().slice(0,10), outcome:$('outcomeSel').value, notes:($('callSummary').value.trim()+(notes?' | '+notes:'')).trim()||'No notes recorded.'};
-    if(rec){
-      rec.gates=gates; rec.magnets=magnets; rec.calls=(rec.calls||[]).concat([entry]);
-      if(entry.outcome==='Book pressure test'){ rec.booked=true; rec.stage='Session booked'; }
-      saveContacts(live);
-      openContact(id);
-    }else{
-      alert('This is a seeded demo record, so it is not saved. Complete an assessment in this preview to create a live record you can log against.');
-      openContact(id);
-    }
-  });
-  window.scrollTo({top:0,behavior:REDUCED?'auto':'smooth'});
-}
-
-/* -------------------- settings -------------------- */
-function opSettings(){
-  return '<div class="grid g2">'+
-    '<div class="card"><h4>Scoring weights</h4>'+
-      '<p class="small mute" style="margin:6px 0 12px">These must total 100. Changing them changes every future score, not past ones.</p>'+
-      CATS.map(c=>'<div class="gaterow" style="margin-bottom:8px"><span>'+esc(c.name)+'</span>'+
-        '<input type="number" min="0" max="100" value="'+SETTINGS.weights[c.id]+'" data-w="'+c.id+'" style="width:80px;margin-left:auto"></div>').join('')+
-      '<p class="small" id="wTotal" style="margin-top:8px"></p>'+
-    '</div>'+
-    '<div class="card"><h4>Readiness bands</h4>'+
-      '<p class="small mute" style="margin:6px 0 12px">Lower bound of each band. Critical is everything below Exposed.</p>'+
-      ['governed','developing','exposed'].map(k=>'<div class="gaterow" style="margin-bottom:8px"><span>'+k.charAt(0).toUpperCase()+k.slice(1)+' starts at</span>'+
-        '<input type="number" min="0" max="100" value="'+SETTINGS.bands[k]+'" data-b="'+k+'" style="width:80px;margin-left:auto"></div>').join('')+
-      '<h4 style="margin-top:18px">Booking link</h4>'+
-      '<input id="calLink" value="'+esc(SETTINGS.calendly)+'" style="margin-top:8px">'+
-      '<div class="btnrow" style="margin-top:14px"><button class="btn sm" type="button" id="saveSet">Save settings</button></div>'+
-    '</div>'+
-  '</div>'+
-  '<div class="card" style="margin-top:16px"><h4>Assessment questions</h4>'+
-    '<p class="small mute" style="margin:6px 0 12px">'+scoredCount()+' scored questions across six categories, plus two sizing questions and one goal question that are not scored. Read only in this preview. In the live version each one can be edited, reordered, added or removed here.</p>'+
-    '<div class="tblwrap"><table class="tbl"><thead><tr><th>Category</th><th>Question</th><th>Options</th></tr></thead><tbody>'+
-    QS.map(q=>'<tr><td>'+esc(CATBY[q.cat].name)+'</td><td>'+esc(tok(q.text,'saas'))+'</td><td>'+q.opts.length+'</td></tr>').join('')+
-    '</tbody></table></div></div>'+
-  '<div class="card" style="margin-top:16px"><h4>What this preview does not do</h4><ul style="margin-top:8px">'+
-    '<li class="small">It does not send email. The report download is real, the email button opens a draft.</li>'+
-    '<li class="small">It does not store anything centrally. Records live in this browser only.</li>'+
-    '<li class="small">It does not publish a peer benchmark, because the dataset does not exist yet.</li>'+
-    '<li class="small">Everything else on these screens works as shown.</li>'+
-  '</ul></div>';
-}
-function wireSettings(){
-  const upd=()=>{
-    const t=Array.from(document.querySelectorAll('[data-w]')).reduce((a,i)=>a+(parseInt(i.value,10)||0),0);
-    const el=$('wTotal'); if(el){ el.textContent='Total: '+t+' percent.'+(t===100?' Correct.':' These must total 100 before saving.'); el.style.color = t===100?'var(--green-l)':'var(--amber-l)'; }
-  };
-  Array.from(document.querySelectorAll('[data-w]')).forEach(i=>i.addEventListener('input',upd));
-  upd();
-  $('saveSet').addEventListener('click',()=>{
-    const w={}; let t=0;
-    Array.from(document.querySelectorAll('[data-w]')).forEach(i=>{ w[i.dataset.w]=parseInt(i.value,10)||0; t+=w[i.dataset.w]; });
-    if(t!==100){ alert('Weights must total 100. They currently total '+t+'.'); return; }
-    const b={}; Array.from(document.querySelectorAll('[data-b]')).forEach(i=>b[i.dataset.b]=parseInt(i.value,10)||0);
-    SETTINGS.weights=w; SETTINGS.bands=b; SETTINGS.calendly=$('calLink').value.trim()||SETTINGS.calendly;
-    BANDS[0].min=b.governed; BANDS[0].max=100;
-    BANDS[1].min=b.developing; BANDS[1].max=b.governed-1;
-    BANDS[2].min=b.exposed;    BANDS[2].max=b.developing-1;
-    BANDS[3].min=0;            BANDS[3].max=b.exposed-1;
-    try{ localStorage.setItem(KEY_SET, JSON.stringify(SETTINGS)); }catch(e){}
-    alert('Saved. New completions use these settings.');
-  });
-}
-
-/* -------------------- csv -------------------- */
-function exportCsv(){
-  const cols=['id','first_name','last_name','email','company','job_title','route','assessment_date','overall_score','readiness_band',
-    'inventory','tools','autonomy','data','runtime','audit','top_gap','pipeline_status','session_booked','gate_1','gate_2','gate_3','source','email_variant','reply_outcome','calls_logged'];
-  const rows=allContacts().map(x=>{
-    const b=bandOf(x), w=weakestOf(x);
-    return [x.id,x.first,x.last,x.email,x.company,x.role,x.lane,x.date,x.score,b.name,
-      one(x.cats.inventory||0),one(x.cats.tools||0),one(x.cats.autonomy||0),one(x.cats.data||0),one(x.cats.runtime||0),one(x.cats.audit||0),
-      w.name,x.stage,x.booked?'yes':'no',
-      (x.gates&&x.gates.gate1)||'unknown',(x.gates&&x.gates.gate2)||'unknown',(x.gates&&x.gates.gate3)||'unknown',
-      x.source,x.variant,x.reply,(x.calls||[]).length];
-  });
-  const csv=[cols.join(',')].concat(rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='skyrelis-contacts.csv';
-  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},600);
-}
-</script>
-</body>
-</html>
