@@ -1,20 +1,23 @@
 services:
   - type: web
-    name: skyrelis-check
+    name: skyrelis-readiness-check
     runtime: python
     plan: starter
-    rootDir: skyrelis-check
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     healthCheckPath: /healthz
     envVars:
       - key: ADMIN_KEY
         generateValue: true
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      - key: DATA_DIR
+        value: /var/data
       - key: SHOW_CONCEPT_BANNER
-        value: "true"
+        value: "false"
+      - key: SCORECARD_URL
+        value: https://skyrelis.com/agent-scorecard-ungated
+      - key: BOOK_URL
+        value: https://skyrelis.com/contact
     disk:
       name: check-data
-      mountPath: /opt/render/project/src/skyrelis-check/data
+      mountPath: /var/data
       sizeGB: 1

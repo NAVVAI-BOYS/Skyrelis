@@ -1,6 +1,34 @@
-# Skyrelis Agent Control Check
+# Skyrelis Agentic Security Readiness Check
 
-Seven questions placing a prospect on two axes: where their agent rules live, and how those rules change. Built by Navvai as an example, September 2026.
+Seven questions, one per area of the six category Agentic Security Readiness Scorecard, weighted exactly as the full assessment weights them. Built by Navvai, September 2026.
+
+## Brand colours, sampled from the logo
+
+The spec document gave a teal and navy palette. The supplied logo is blue and gold, and the logo is the authority, so the app was retoned to it.
+
+| Token | Value | Sampled from |
+|---|---|---|
+| `--teal` (primary accent) | `#47ABFF` | the blue mark in the lockup |
+| `--gold` (CTA fill) | `#F9C002` | the Skyrelis wordmark |
+| `--navy` | `#2C395C` | the navy dots in the square icon |
+| `--amber` (medium risk) | `#E7B844` | the gold path in the square icon |
+
+Gold stays bright in both themes because it is a fill that should match the wordmark. Amber is theme aware because it carries meaning as text and borders. Red stays a legibility lift of the spec alert colour.
+
+## What this is
+
+The first version scored two invented axes (where agent rules live, how they change), which between them covered about 55 percent of the real scorecard's weight. Sensitive data exposure, audit evidence, tool and action visibility and agent inventory were not represented at all.
+
+v2 keeps the format Dave wanted kept (seven taps, no email, the moving dot) and replaces the scoring underneath:
+
+- Every question maps to exactly one scorecard category, shown on screen with its real weight
+- Runtime policy enforcement keeps two questions because it carries 30 percent
+- The 0 to 100 score uses the scorecard's own formula: (rating - 1) / 4 x weight, summed
+- The five band names come from the scorecard: Early experimentation, Fragmented control, Partial governance, Strong direction, Governed autonomy
+- The quadrant axes are now derived from category averages: runtime control on the horizontal, the other five categories averaged on the vertical
+- The top right quadrant is Governed autonomy, the scorecard's own top tier name, replacing the invented term Control plane
+
+Weights used: agent inventory 5, tool and action visibility 15, autonomy and approval boundaries 25, sensitive data exposure 20, runtime policy enforcement 30, audit ready evidence 5.
 
 Runs as a Flask web service on the standard Navvai Render pattern.
 
@@ -8,31 +36,66 @@ Runs as a Flask web service on the standard Navvai Render pattern.
 
 ## Deploy on Render
 
-1. Push this folder to a GitHub repo (for example `NAVVAI-BOYS/SKYRELIS-CHECK`).
-2. Render, New, **Web Service**. Not a Static Site.
-3. Connect the repo and set:
+### If this is just so Jaz and Dave can see it
+
+You do not need the disk and you do not need `ADMIN_KEY`. Deploy as a Web Service with `pip install -r requirements.txt` and `gunicorn app:app`, set nothing else, and send them the URL.
+
+The check runs and scores exactly the same. Every completion still lands in the Render log stream as one `CHECK ref=...` line, so you can see whether they finished it. Nothing is kept between restarts, `/api/config` reports `"storage":"ephemeral"`, and `/ops` returns 401 because no key is set. Add the disk and the key later, in the service's settings, on the day it starts taking real prospects. Nothing in the app changes.
+
+### If you already have the service at skyrelis.onrender.com
+
+Push this folder's contents to the same repo and Render redeploys. Then check two settings that changed in this version:
+
+- Environment variable `DATA_DIR` set to `/var/data`
+- A disk mounted at `/var/data`, 1GB, under the service's Disks tab
+
+Without the disk the app still runs and still scores, it just cannot keep records, and `/ops` will tell you so in a banner.
+
+### If you are deploying fresh
+
+**Put these files at the ROOT of the repo, not inside a subfolder.** `render.yaml` is only read when it sits at the repo root. That is what broke a previous Navvai deploy: the zip was unpacked into a subfolder, the blueprint was never read, no disk was created, and the service crashed on boot.
+
+Then either:
+
+**A. Blueprint, does everything for you**
+New, Blueprint, point it at the repo. `render.yaml` sets the runtime, commands, health check, all five environment variables and the disk.
+
+**B. By hand**
 
 | Setting | Value |
 |---|---|
-| Runtime | **Python 3** (not Docker) |
-| Root Directory | `skyrelis-check` |
+| Type | **Web Service**, not a Static Site |
+| Runtime | **Python 3**, not Docker |
+| Root Directory | leave blank if the files are at the repo root |
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `gunicorn app:app` |
 | Health Check Path | `/healthz` |
 
-4. Environment variables:
+Then add a disk under Disks: any name, mount path `/var/data`, 1GB.
+
+### Environment variables
 
 | Key | Value | Needed |
 |---|---|---|
-| `ADMIN_KEY` | any long random string you pick | Yes. Without it `/ops` returns 401 for everyone including you. |
-| `SHOW_CONCEPT_BANNER` | `true` or `false` | Optional, defaults to `true` |
-| `ANTHROPIC_API_KEY` | leave blank | Reserved slot, nothing in this build calls it |
+| `ADMIN_KEY` | a long random string you pick | **Yes.** Without it `/ops` returns 401 to everyone including you |
+| `DATA_DIR` | `/var/data` | Yes, and it must match the disk mount path |
+| `SHOW_CONCEPT_BANNER` | `false` | Optional, already the default |
+| `SCORECARD_URL` | link behind "Take the full scorecard" | Optional, defaults to the ungated scorecard |
+| `BOOK_URL` | link behind "Talk it through with us" | Optional, defaults to skyrelis.com/contact |
 
-5. Add a **persistent disk** mounted at `/opt/render/project/src/skyrelis-check/data`, 1GB. Without it, Render wipes the recorded answers on every deploy and restart.
+### Check it came up
 
-`render.yaml` in this folder does all of the above if you deploy as a Blueprint instead.
+- `/healthz` returns `ok`
+- `/api/config` returns `"storage":"disk"`. That is a real test: it reports `disk` only when `DATA_DIR` is an actual mount point, because on Render every path is writable whether or not a disk is attached, and a writable path with no disk behind it loses every record on the next deploy. `ephemeral` means the disk is missing or `DATA_DIR` does not match its mount path. `none` means nothing is writable at all.
+- `/ops?key=YOUR_KEY` loads and shows no orange or red banner
 
----
+Storage is deliberately never a startup dependency. If the disk is missing the app still serves, still scores, still logs every completion to the Render log stream, and says plainly on `/ops` that records are not being kept.
+
+## The flow
+
+1. **Before we score.** One unscored screen asking which kinds of agent they run: enterprise operated, platform based, vendor controlled, browser and endpoint, or none yet. This is the executive brief's own framework, which Dave flagged as missing from the first version. Choosing "none yet" ends the check politely, which also restores the qualifying step v1 had.
+2. **Seven questions**, one per scorecard category, runtime getting two.
+3. **The result.** Weighted score, band, category table, quadrant position, weakest answers, a scoring note for vendor run agents, this check versus the full scorecard, and the two calls to action.
 
 ## The URLs
 
@@ -63,26 +126,25 @@ The check never asks for a name or an email, which is the point of it. So on an 
 
 Lives in one function, `facilitator_read()` in `app.py`. Change it there and it changes on `/ops`, in the CSV and in the JSON at once.
 
-Book the recording when all three hold:
+Book when the score is **below 75**, meaning they are not already in the stronger half, **and** at least one of:
 
-1. At least one agent acts without a person approving each step
-2. The position is anything other than Control plane
-3. Either per customer rules are built by hand, or a restriction needs a release
+1. Runtime policy enforcement averages below 3.5 out of 5. That is the thing the platform actually fixes.
+2. They run vendor controlled agents and cannot get proof from the vendor.
 
-Everything else stays friendly and unbooked.
+Score 75 or above is interesting for an episode and weak as a commercial lead: worth having, worth not chasing. A low score with healthy runtime and vendor proof means the weakness sits somewhere Skyrelis does not lead on, so it asks a follow up rather than booking.
 
-A strong signal is flagged separately: per customer rules built by hand **and** rules rebuilt when the model changes. That combination is Skyrelis's pitch in the prospect's own words.
+A strong signal is flagged separately: runtime enforcement slow **and** sensitive data exposure uncontrolled at the same time. That pair is the escalation story in the prospect's own answers.
 
 ---
 
 ## Before this goes in front of real prospects
 
-- [ ] Check it against the existing Skyrelis Agentic Security Scorecard. Some of this may already exist there in a better form.
-- [ ] Get the real Skyrelis logo and typeface. The colours come from the spec, but the mark is plain text on purpose, because inventing a client mark is worse than leaving it blank.
-- [ ] Agree the seven questions and the four box names with Jaz and Dave. They are a first pass.
+- [x] **The logo is in.** Extracted from the supplied asset by alpha keying it off its black ground, so the antialiasing survives and nothing was redrawn. The lockup is the mark plus the wordmark with the tagline dropped, since a tagline does not belong in a 26px masthead. Embedded as base64 so there is no external request. The square icon asset is the favicon.
+- [ ] **The typeface.** Still Archivo and Inter. If Skyrelis has a brand face, send it and it is a one line change.
+- [ ] **Confirm the two links.** `SCORECARD_URL` points at the ungated scorecard named in the memo. `BOOK_URL` is a guess and should be whatever Jaz wants, probably her Calendly.
+- [ ] **Sign off the question wording.** The categories, weights, formula and band names are Skyrelis's. The wording of the seven questions and the line under each answer is still Navvai's.
+- [ ] **A privacy line,** if this sits on skyrelis.com. The site carries a cookie banner and a policy, so a page that records anything should say so in their words.
 - [ ] Decide whether it sits on skyrelis.com or on a Navvai URL. Dave owns their website.
-- [ ] Turn `SHOW_CONCEPT_BANNER` to `false` once it stops being an example.
-- [ ] Add a privacy line if it goes on their domain. Their site carries a cookie banner and a privacy policy, so a page that records anything should say so in their words, not mine.
 
 ---
 
