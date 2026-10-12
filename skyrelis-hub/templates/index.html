@@ -9,7 +9,7 @@
    v2, revised against the six category Agentic Security
    Readiness Scorecard following Dave Ginsburg's memo.
    Values marked LIFT are legibility variants for dark ground,
-   stated as lifts rather than passed off as brand colours.
+   stated as lifts rather than passed off as brand colors.
    ============================================================ */
 :root{
   --bg:#0A0F1E;            /* brand: page background */
@@ -211,6 +211,21 @@ h3{font-size:16.5px;letter-spacing:-.015em}
 .bline b{font-weight:600}
 
 .closer{border:1px solid var(--line-2);border-radius:14px;padding:19px;margin-top:26px;background:var(--surface-2)}
+
+/* ---------- the lead form ---------- */
+.leadlede{margin-top:8px;font-size:14.8px;color:var(--ink-2);line-height:1.5;max-width:56ch}
+.leadform{display:grid;gap:11px;margin-top:16px;align-items:end}
+@media (min-width:620px){.leadform{grid-template-columns:1fr 1fr auto}}
+.lf{display:block;min-width:0}
+.lf span{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-2);margin-bottom:6px}
+.lf input{width:100%;background:var(--surface);color:var(--ink);font:inherit;font-size:14.8px;
+  border:1px solid var(--line-2);border-radius:10px;padding:11px 13px;min-height:44px}
+.lf input::placeholder{color:var(--ink-2);opacity:.7}
+.lf input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--glow)}
+.leadform .cta{margin-top:0;min-height:44px;white-space:nowrap}
+.leaderr{margin-top:11px;font-size:13.5px;color:var(--red);font-weight:600}
+.leadnote{margin-top:12px;font-size:12.8px;color:var(--ink-2);line-height:1.5}
 .footnote{margin-top:22px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
 
 /* ---------- concept framing ---------- */
@@ -299,7 +314,7 @@ h3{font-size:16.5px;letter-spacing:-.015em}
         </div>
         <div class="xlab"><span>Low</span><span>Runtime control</span></div>
         <div class="mapfoot" id="mapFoot">
-          Two numbers place the dot. <strong>Visibility and governance</strong> averages inventory, action visibility, autonomy, data exposure and audit evidence. <strong>Runtime control</strong> averages the two enforcement questions. Seven questions moves it.
+          Two numbers place the dot. <strong>Visibility and governance</strong> averages inventory, action visibility, autonomy, data exposure and audit evidence. <strong>Runtime control</strong> comes from policy enforcement. Your answers move it.
         </div>
       </div>
     </div>
@@ -308,13 +323,13 @@ h3{font-size:16.5px;letter-spacing:-.015em}
     <div class="panelcol">
 
       <section class="panel" id="scIntro">
-        <span class="kicker">Seven questions &middot; about two minutes</span>
+        <span class="kicker">About two minutes</span>
         <h1>Can you control what your AI agents are doing?</h1>
-        <p class="lede">Seven questions, one for each area of the Agentic Security Readiness Scorecard, weighted exactly as the full assessment weights them. You get a score out of 100, a position on the quadrant, and the answers that put you there.</p>
+        <p class="lede">One question for each area of the Agentic Security Readiness Scorecard, weighted exactly as the full assessment weights them. You get a score out of 100, a position on the quadrant, and where your gaps are.</p>
         <div class="chips">
-          <span class="chip">No email needed</span>
-          <span class="chip">No name asked for</span>
-          <span class="chip">Same maths as the full scorecard</span>
+          <span class="chip">About two minutes</span>
+          <span class="chip">Same scoring as the full scorecard</span>
+          <span class="chip">Results on screen right away</span>
         </div>
         <script>
           window.SKY_CAPTURE = {{ 'true' if capture else 'false' }};
@@ -323,7 +338,7 @@ h3{font-size:16.5px;letter-spacing:-.015em}
         </script>
         <div class="ctarow">
           <button class="cta" id="btnStart">Start the check</button>
-          <span style="font-size:12.5px;color:var(--ink-2)">Seven taps. The dot moves as you go.</span>
+          <span style="font-size:12.5px;color:var(--ink-2)">The dot moves as you go.</span>
         </div>
       </section>
 
@@ -378,19 +393,28 @@ h3{font-size:16.5px;letter-spacing:-.015em}
    Runtime enforcement carries 30 percent and so gets two questions.
    ============================================================ */
 const CATS = {
-  autonomy:   {name:'Autonomy and approval boundaries', weight:25, colour:'var(--amber)'},
-  inventory:  {name:'Agent inventory and control boundary', weight:5,  colour:'var(--navy)'},
-  visibility: {name:'Tool and action visibility', weight:15, colour:'var(--navy)'},
-  data:       {name:'Sensitive data exposure', weight:20, colour:'var(--red)'},
-  runtime:    {name:'Runtime policy enforcement', weight:30, colour:'var(--teal)'},
-  audit:      {name:'Audit ready evidence', weight:5,  colour:'var(--navy)'}
+  autonomy:   {name:'Autonomy and approval boundaries', weight:25, color:'var(--amber)',
+               fix:'Sort agents into risk tiers and set one approval rule per tier.'},
+  inventory:  {name:'Agent inventory and control boundary', weight:5,  color:'var(--navy)',
+               fix:'Start one list of every agent, with an owner and what it can reach.'},
+  visibility: {name:'Tool and action visibility', weight:15, color:'var(--navy)',
+               fix:'Pick one agent and get every tool it calls into a single place you can read.'},
+  data:       {name:'Sensitive data exposure', weight:20, color:'var(--red)',
+               fix:'Pick the two most sensitive fields and mask them before the agent sees them.'},
+  runtime:    {name:'Runtime policy enforcement', weight:30, color:'var(--teal)',
+               fix:'Move one agent’s rules out of its code, so a change does not need a release.'},
+  audit:      {name:'Audit ready evidence', weight:5,  color:'var(--navy)',
+               fix:'For one agent, record what was allowed alongside what was done.'}
 };
 const CAT_ORDER = ['inventory','visibility','autonomy','data','runtime','audit'];
 
-/* Four options per question, best first.
-   Rating comes from the scorecard's own scale: 5, 3.67, 2.33, 1.
-   The line under each option is what the reader gets back before
-   the check moves on. That is where the education happens. */
+/* Four options on every question, best first, so the scale is the scorecard's
+   own 5, 3.67, 2.33, 1 throughout. Five option questions were tried and pulled:
+   they made the check longer to read without making the score any sharper.
+   The step is still worked out from the number of options rather than hard
+   wired, so adding a fifth option somewhere does not produce a negative rating.
+   The line under each option is what the reader gets back before the check
+   moves on. That is where the education happens. */
 const QS = [
   {
     id:'q1', cat:'autonomy', part:'',
@@ -421,72 +445,84 @@ const QS = [
     ]
   },
   {
+    /* Tool and action visibility, 15%. Pitched at what one person knows without
+       asking a colleague, which is the test the whole check is held to. The
+       token question used to carry this category. It moved to the result page,
+       and since the six weights total 100 a category with no question caps the
+       best possible score at 85, so visibility needed a question of its own. */
     id:'q3', cat:'visibility', part:'',
-    q:'If an agent updated a record or sent data to another system yesterday, would you know?',
+    q:'Can you see which tools and systems your agents actually touched this week?',
     opts:[
-      {t:'Yes. We see every tool call and executed action, not just model usage.',
-       r:'Seeing the action rather than the model usage is the distinction most tooling misses.'},
-      {t:'Yes, but only for agents we built ourselves.',
-       r:'So the blind spot is exactly the set of agents you did not choose.'},
-      {t:'Only if someone happened to notice, or went looking.',
-       r:'Found by looking means found late, and only while somebody had time to look.'},
-      {t:'No. We can see that AI was used, not what it actually did.',
-       r:'Knowing AI was involved is not the same as knowing what it did.'}
+      {t:'Yes. Every tool call and system touched, in one place, per agent.',
+       r:'One place per agent is what turns the question into a lookup rather than a project.'},
+      {t:'Mostly. We can see it for the agents we built, not the ones we bought.',
+       r:'The ones you bought are usually the ones reaching furthest into other systems.'},
+      {t:'Only by going to each tool or log separately.',
+       r:'Four places to check means the answer arrives after the question stopped mattering.'},
+      {t:'No. We would have to ask whoever built it.',
+       r:'Then visibility is a person, and people are not available at two in the morning.'}
     ]
   },
   {
+    /* Jaz's wording, trimmed from five options to four. The scattered option
+       and the engineering managed option described the same position from two
+       angles, so they are one option rather than one cut. */
     id:'q4', cat:'data', part:'',
-    q:'Can you stop an agent sending sensitive data to the wrong place, without shutting it off entirely?',
+    q:'Can sensitive data handling change by user group, location, workflow, or customer policy?',
     opts:[
-      {t:'Yes. Masking and destination rules by data type, user and workflow.',
-       r:'Control at that grain lets you say yes to a use case instead of no.'},
-      {t:'Partially. Some fields are masked, but inconsistently.',
-       r:'Inconsistent masking is the version that passes a demo and fails a review.'},
-      {t:'Only by blocking the agent from that data altogether.',
-       r:'Then your only lever is the blunt one, which is why it gets pulled late.'},
-      {t:'No. If it can read the data, we cannot control where it goes.',
-       r:'Read access and send access are the same permission here. That is the finding reviewers look for.'}
+      {t:'Security creates and updates policy profiles directly, enforced at runtime.',
+       r:'Different rules for different customers, without a different build for each one.'},
+      {t:'Partial controls exist, scattered across tools, with engineering managing them.',
+       r:'Scattered means nobody can state the policy without checking four places first.'},
+      {t:'Only with hard coded changes, custom logic, or separate versions of the app.',
+       r:'A new customer rule becomes a new code path somebody has to maintain.'},
+      {t:'No. One data policy covers all agent use.',
+       r:'So the strictest customer sets the ceiling for everyone else.'}
     ]
   },
   {
     id:'q5', cat:'runtime', part:'1 of 2',
     q:'Someone asks you to restrict what an agent can do. What happens, and how long does it take?',
     opts:[
-      {t:'Security edits a policy. Live today.',
-       r:'That answer closes a security conversation instead of opening a project.'},
-      {t:'Engineering changes config. Same week.',
-       r:'Same week is competitive. It still spends an engineer who was doing something else.'},
-      {t:'Code change, next release.',
+      {t:'The control sits outside the application. Security can change the policy live.',
+       r:'Policy that sits outside the application is what lets security answer without opening a project.'},
+      {t:'The control is built into the application, so the configuration can be changed live.',
+       r:'Live is quick. The control still only reaches as far as that one application.'},
+      {t:'The control is not built in, so Engineering has to add the logic and ship it in a release.',
        r:'A security requirement has just turned into a delivery date.'},
-      {t:'Full redeploy, scheduled.',
-       r:'The request now has a queue position rather than an answer.'}
+      {t:'It needs customer specific development or a larger custom project.',
+       r:'The request now has a project around it rather than an answer.'}
     ]
   },
   {
     id:'q6', cat:'runtime', part:'2 of 2',
-    q:'For agents running inside a vendor product, can that vendor prove your policy was followed?',
+    q:'For vendor hosted agents, can you apply your own policy and prove it is continuously enforced?',
+    /* Runtime carries two questions, and the category level first step does
+       not fit this one. Without its own, the result page prints the same
+       line twice when both runtime answers are weak. */
+    fix:'Ask one vendor, in writing, to show your policy being applied inside their product.',
     opts:[
-      {t:'Yes. Action level logs and proof tied to our specific policy.',
-       r:'Proof tied to your policy, rather than their defaults, is the part almost nobody can produce.'},
-      {t:'Yes, but only generic vendor wide settings, not our policy.',
-       r:'Their settings are evidence about them. What you need is evidence about you.'},
-      {t:'We have not asked.',
-       r:'Worth asking before one of your own customers asks you the same question.'},
-      {t:'No. We have no visibility once it is inside their product.',
+      {t:'Yes. Our policy, ongoing enforcement and audit evidence.',
+       r:'Your policy proved continuously, rather than theirs described once, is the part almost nobody can produce.'},
+      {t:'Partially. Vendor controls only, with limited customization.',
+       r:'Their controls are evidence about them. What a reviewer asks for is evidence about you.'},
+      {t:'We rely on the vendor’s default controls and reports.',
+       r:'Defaults are built for their average customer, not for your risk.'},
+      {t:'No. We have little visibility or control inside the vendor product.',
        r:'So part of your estate is governed on somebody else’s word, and you cannot check it.'}
     ]
   },
   {
     id:'q7', cat:'audit', part:'',
-    q:'If leadership asked why an agent did something last week, could you answer?',
+    q:'If an agent took an important action last week, could you reconstruct exactly what happened?',
     opts:[
-      {t:'Yes. One trail: trigger, action, policy applied, outcome.',
-       r:'Trigger through to outcome in one trail is what turns logs into evidence.'},
-      {t:'Yes, but it takes manual work stitching tools together.',
-       r:'Stitching takes days, and the question usually arrives with a deadline attached.'},
-      {t:'Only for agents we built ourselves.',
-       r:'Which leaves the rest of the estate unanswerable.'},
-      {t:'No. We have logs, not evidence.',
+      {t:'Yes. We can see the action, the policy applied, and whether security allowed, blocked, masked or escalated it.',
+       r:'Action through to outcome in one trail is what turns logs into evidence.'},
+      {t:'Partially. We can see the action and some controls, but not the full policy decision and outcome.',
+       r:'Partial reconstruction is the version that takes days and still leaves the awkward gap.'},
+      {t:'We can see what the agent did, but not what security control was applied at the time.',
+       r:'What it did, with no record of what was allowed, answers only the easy half of the question.'},
+      {t:'No. We have activity logs, but no clear evidence of how the action was governed.',
        r:'Logs say what happened. Evidence says it was allowed to happen.'}
     ]
   }
@@ -533,13 +569,19 @@ const ESTATE = [
    ============================================================ */
 const A = {};
 const EST = new Set();
-let idx = 0, awaiting = false, sent = false;
+let idx = 0, sent = false;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* The scorecard's own rating scale: option 0..3 maps to 5, 3.67, 2.33, 1 */
-function rating(i){ return 5 - i * (4 / 3); }
+/* The scorecard scores every answer 5 down to 1. With four options that is
+   5, 3.667, 2.333, 1. Questions 3, 4 and 8 have five options, which gives a
+   clean 5, 4, 3, 2, 1. Hard wiring the four option step produced -0.33 for a
+   fifth option and a negative contribution, so the step comes from the
+   number of options on the question being answered. */
+function rating(i, n){ return 5 - i * (4 / ((n || 4) - 1)); }
+function ratingFor(q, i){ return rating(i, q.opts.length); }
 const one = n => (Math.round(n * 10) / 10).toFixed(1);
 
 /* Damarie labels a live call with ?ref=acme-maya so the record is
@@ -553,13 +595,19 @@ const CAPTURE = window.SKY_CAPTURE === true;
    this file. The defaults are Skyrelis's own published pages. */
 const SCORECARD_URL = window.SKY_SCORECARD_URL || 'https://skyrelis.com/agent-scorecard-ungated';
 const BOOK_URL = window.SKY_BOOK_URL || 'https://skyrelis.com/contact';
+/* The id the server gives the anonymous record, so the form at the end can
+   attach a name and a work email to the answers already stored. */
+let recordId = null;
 function send(payload){
   if(sent || !CAPTURE) return;
   sent = true;
   if(location.protocol !== 'http:' && location.protocol !== 'https:') return;
   try{
     fetch('/api/check', {method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(Object.assign({ref:REF}, payload))}).catch(() => {});
+      body:JSON.stringify(Object.assign({ref:REF}, payload))})
+      .then(r => r.json())
+      .then(d => { if(d && d.id) recordId = d.id; })
+      .catch(() => {});
   }catch(e){}
 }
 
@@ -567,11 +615,21 @@ function send(payload){
    SCORING — the scorecard's formula, unchanged
    contribution = (rating - 1) / 4 * weight
    ============================================================ */
+/* The questions actually in play. Q6 asks whether your own policy reaches
+   inside a vendor product. A company that runs no vendor hosted agents has
+   no honest answer to it, and leaving it in cost them up to 15 points and a
+   whole band for a risk they do not carry. So it is only asked when they
+   told us on the estate screen that they have vendor hosted agents. */
+let ACTIVE = [];
+function buildActive(){
+  ACTIVE = QS.filter(q => q.id !== 'q6' || EST.has('vendor'));
+}
+
 function catRatings(){
   const out = {};
-  QS.forEach(q => {
-    if(A[q.id] === undefined) return;
-    (out[q.cat] = out[q.cat] || []).push(rating(A[q.id]));
+  ACTIVE.forEach(q => {
+    if(q.lens || A[q.id] === undefined) return;   /* lens answers are not scored */
+    (out[q.cat] = out[q.cat] || []).push(ratingFor(q, A[q.id]));
   });
   return out;
 }
@@ -664,8 +722,8 @@ function syncEstate(){
   if(!n){ note.textContent = 'Nothing selected yet.'; return; }
   if(EST.has('none')){ note.textContent = 'Nothing in production. The next screen explains why there is no score to give you.'; return; }
   note.textContent = EST.has('vendor')
-    ? 'You run agents inside a vendor product, so the question on vendor proof carries real weight for you rather than being hypothetical.'
-    : 'Noted. The seven questions are about the agents you operate.';
+    ? 'You run agents inside a vendor product, so you also get the question on whether your own policy reaches inside it.'
+    : 'Noted. The questions are about the agents you operate. The vendor hosted question will be skipped.';
 }
 function estateNames(){ return ESTATE.filter(e => EST.has(e.id)).map(e => e.name); }
 
@@ -673,10 +731,10 @@ function estateNames(){ return ESTATE.filter(e => EST.has(e.id)).map(e => e.name
    QUESTIONS
    ============================================================ */
 function renderQ(){
-  const q = QS[idx], c = CATS[q.cat];
-  $('pgTxt').textContent = 'Question ' + (idx + 1) + ' of ' + QS.length;
-  $('pgFill').style.width = ((idx + 1) / QS.length * 100) + '%';
-  $('qBadge').innerHTML = '<b>' + esc(c.name) + '</b><span>' + c.weight + '%</span>' +
+  const q = ACTIVE[idx], c = CATS[q.cat];
+  $('pgTxt').textContent = 'Question ' + (idx + 1) + ' of ' + ACTIVE.length;
+  $('pgFill').style.width = ((idx + 1) / ACTIVE.length * 100) + '%';
+  $('qBadge').innerHTML = '<b>' + esc(c.name) + '</b><span>' + (c.weight === null ? 'Not scored' : c.weight + '%') + '</span>' +
     (q.part ? '<span style="color:var(--ink-2);font-weight:400">' + q.part + '</span>' : '');
   $('qText').textContent = q.q;
 
@@ -688,25 +746,25 @@ function renderQ(){
   $('qReact').innerHTML = (chosen !== undefined)
     ? '<div class="react"><b>What that tells us</b><p>' + esc(q.opts[chosen].r) + '</p></div>' : '';
   $('btnNext').hidden = chosen === undefined;
-  $('btnNext').textContent = (idx === QS.length - 1) ? 'See where you land' : 'Next';
+  $('btnNext').textContent = (idx === ACTIVE.length - 1) ? 'See where you land' : 'Next';
   $('btnBack').textContent = idx === 0 ? 'Back to the start' : 'Back';
 
   Array.from($('qOpts').children).forEach(b =>
     b.addEventListener('click', () => pick(parseInt(b.dataset.i, 10))));
   paintMap(false);
 }
+/* Choosing an answer does not move the page. It was auto advancing 1150ms
+   after a choice, which took the question away before anyone could read the
+   other options or change their mind. The page now waits for Next. */
 function pick(i){
-  if(awaiting) return;
-  const q = QS[idx];
+  const q = ACTIVE[idx];
   A[q.id] = i;
   Array.from($('qOpts').children).forEach((b,bi) => b.classList.toggle('picked', bi === i));
   $('qReact').innerHTML = '<div class="react"><b>What that tells us</b><p>' + esc(q.opts[i].r) + '</p></div>';
   $('btnNext').hidden = false;
   paintMap(false);
-  awaiting = true;
-  setTimeout(() => { awaiting = false; advance(); }, 1150);
 }
-function advance(){ if(idx >= QS.length - 1){ finish(); return; } idx++; renderQ(); }
+function advance(){ if(idx >= ACTIVE.length - 1){ finish(); return; } idx++; renderQ(); }
 function back(){ if(idx === 0){ show('scEstate'); paintMap(false); return; } idx--; renderQ(); }
 
 /* ============================================================
@@ -716,9 +774,10 @@ function finish(){
   const cr = catRatings(), score = weightedScore(cr), band = bandFor(score);
   const ax = axes(cr), k = quadKey(ax.x, ax.y), quad = QUADS[k];
   const vendorGapNow = A.q6 !== undefined && A.q6 >= 2;
+  const runtimeQs = ACTIVE.filter(q => q.cat === 'runtime').length;
 
   /* weakest answers: any question whose option scored in the bottom two */
-  const weak = QS.filter(q => A[q.id] !== undefined && A[q.id] >= 2)
+  const weak = ACTIVE.filter(q => !q.lens && A[q.id] !== undefined && A[q.id] >= 2)
                  .map(q => ({q, i:A[q.id], o:q.opts[A[q.id]], cat:CATS[q.cat]}))
                  .sort((a,b) => (b.i - a.i) || (b.cat.weight - a.cat.weight));
 
@@ -742,7 +801,7 @@ function finish(){
     h += '<tr>' +
       '<td class="nm">' + esc(c.name) + '</td>' +
       '<td class="wt">' + c.weight + '%</td>' +
-      '<td class="barcell"><span class="cbar"><span style="width:' + Math.round(share * 100) + '%;background:' + c.colour + '"></span></span></td>' +
+      '<td class="barcell"><span class="cbar"><span style="width:' + Math.round(share * 100) + '%;background:' + c.color + '"></span></span></td>' +
       '<td class="pts">' + one(pts) + ' / ' + c.weight + '</td>' +
     '</tr>';
   });
@@ -755,91 +814,86 @@ function finish(){
          '<p class="banddesc" style="max-width:58ch">' + esc(quad.body) + '</p>' +
          '<div class="byop" style="margin-top:14px">' +
            '<div class="bline"><span class="bn">Y</span><p><b>Visibility and governance: ' + one(ax.y) + ' out of 5.</b> Averaged across inventory, action visibility, autonomy, data exposure and audit evidence.</p></div>' +
-           '<div class="bline"><span class="bn">X</span><p><b>Runtime control: ' + one(ax.x) + ' out of 5.</b> Averaged across the two enforcement questions.</p></div>' +
+           '<div class="bline"><span class="bn">X</span><p><b>Runtime control: ' + one(ax.x) + ' out of 5.</b> ' +
+             (runtimeQs === 2 ? 'Averaged across the two enforcement questions.' : 'From the enforcement question.') + '</p></div>' +
          '</div>' +
        '</div>';
 
-  h += '<div class="limits"><h3>How the score and the quadrant relate</h3><ul>' +
-       '<li><b>Both come from the same seven answers.</b> The score is the weighted total. The quadrant is the same answers split into two halves.</li>' +
-       '<li><b>They can say different things, and that is useful.</b> A high score with a low runtime number means the governance is real and the enforcement is slow. That is a different conversation from a low score, not a contradiction.</li>' +
-       '</ul></div>';
-
-  /* the executive brief's rule: vendor hosted agents are scored on the proof
-     the vendor can give you, not on control you do not have */
+  /* the executive brief's rule: vendor hosted agents are scored on whether
+     your own policy reaches inside, not on control you do not have */
   if(EST.has('vendor')){
-    h += '<div class="limits" style="border-color:rgba(233,168,58,.45)"><h3>A note on your vendor run agents</h3><ul>' +
-         '<li><b>You told us some agents run inside a vendor product.</b> Those are not scored on control you do not have. They are scored on the proof the vendor can give you that your policy was followed.</li>' +
+    h += '<div class="limits" style="border-color:rgba(233,168,58,.45)"><h3>Your vendor run agents</h3><ul>' +
          '<li>' + (vendorGapNow
-            ? '<b>Right now that proof is not there.</b> Which means part of your estate sits outside every other number on this page, including the strong ones.'
-            : '<b>Your answer says that proof exists.</b> That is unusual, and it is worth keeping written down, because it is the first thing a customer security team will ask you for.') + '</li>' +
+            ? '<b>Right now it is their policy, not yours.</b> That part of your estate sits outside every other number on this page, including the strong ones.'
+            : '<b>Your own policy applies inside the vendor product, with evidence.</b> That is unusual. Keep it written down, because it is the first thing a customer security team asks for.') + '</li>' +
+         '</ul></div>';
+  }else{
+    h += '<div class="limits"><h3>One question you were not asked</h3><ul>' +
+         '<li>You told us no agents run inside a vendor product, so the question about vendor hosted policy was skipped rather than scored against you. ' +
+         'Runtime policy enforcement here comes from the one question that applies.</li>' +
          '</ul></div>';
   }
 
-  h += '<div class="sechead"><h3>Your weakest answers</h3>' +
-       '<p>' + (weak.length ? 'Worst first, with the area each one sits in and what it carries.' : 'Nothing landed in the bottom half.') + '</p></div>';
+  h += '<div class="sechead"><h3>Where the gaps are</h3>' +
+       '<p>' + (weak.length ? 'Worst first, with a basic first step for each.' : 'Nothing landed in the bottom half.') + '</p></div>';
   if(weak.length){
+    /* A question may carry its own first step. Where it does not, the one
+       for its category is used, and a repeat is dropped rather than printed
+       twice, which would say nothing the second time. */
+    const shown = [];
     weak.forEach(w => {
+      const fix = w.q.fix || w.cat.fix;
+      const dupe = shown.indexOf(fix) > -1;
+      if(!dupe) shown.push(fix);
       h += '<div class="weak">' +
              '<div class="wc">' + esc(w.cat.name) + ' &middot; ' + w.cat.weight + '% of the score</div>' +
-             '<div class="wq">' + esc(w.q.q) + '</div>' +
              '<div class="wa">' + esc(w.o.t) + '</div>' +
-             '<div class="ww">' + esc(w.o.r) + '</div>' +
+             (dupe ? '' : '<div class="ww"><b>Basic first step.</b> ' + esc(fix) + '</div>') +
            '</div>';
     });
   }else{
     h += '<div class="weak" style="border-left-color:var(--teal)">' +
            '<div class="wa">No answer landed in the bottom half.</div>' +
-           '<div class="ww">Worth saying plainly rather than manufacturing a finding. The useful conversation from here is about proving it rather than building it.</div>' +
+           '<div class="ww">Worth saying plainly rather than manufacturing a finding.</div>' +
          '</div>';
   }
 
-  const vendorGap = vendorGapNow;
-  h += '<div class="sechead"><h3>What &ldquo;bring your own policy&rdquo; means here</h3>' +
-       '<p>Not scored. This is the shape of the fix rather than part of the measurement.</p></div>';
-  h += '<div class="byop">' +
-       '<div class="bline"><span class="bn">1</span><p>The rules move out of the code into one place your security team owns, so a change is an edit rather than a release.</p></div>' +
-       '<div class="bline"><span class="bn">2</span><p>' + (vendorGap
-          ? 'Each customer or team carries their own policy profile, and a vendor running agents on your behalf can be held to <b>your</b> policy rather than their defaults. That is the gap your answer on vendor hosted agents just showed.'
-          : 'Each customer or team carries their own policy profile, so the strictest one stops setting the ceiling for everyone else.') + '</p></div>' +
-       '<div class="bline"><span class="bn">3</span><p>Because the policy sits above the model, changing the AI underneath does not take the rules with it.</p></div>' +
-       '</div>';
+  /* The token question moved off the check and onto this page. As a question it
+     was one more thing to answer for a point better made than asked. Jaz's
+     wording, unchanged. It is a prompt for the call, so it shows for everyone
+     rather than reacting to an answer. */
+  h += '<div class="limits"><h3>Worth checking before we speak</h3><ul>' +
+       '<li><b>Token and resource consumption.</b> Unexpected consumption can be a cost issue, ' +
+       'but it is also a runtime behavior signal. Spikes, loops, retries or unusual tool paths ' +
+       'can show an agent behaving outside its expected pattern.</li>' +
+       '<li><b>Who would notice.</b> If that happened tonight, it is worth knowing whether ' +
+       'anyone would see it before the invoice does.</li>' +
+       '</ul></div>';
 
-  h += '<div class="closer">' +
-         '<h3>' + (score >= 75 ? 'The question worth asking next' : 'The one thing worth doing next') + '</h3>' +
-         '<p style="margin-top:9px;font-size:14.8px;color:var(--ink-2)">' + (score >= 75
-            ? 'You are in the stronger half, so the useful conversation is not about getting control. It is whether you could prove it held, on the day somebody asks you to.'
-            : 'Take one agent, the one with the most customer attention on it, and answer one question: if a restriction was asked for this morning, could it be live this afternoon? That answer is the whole gap, and it takes a fortnight to close for a single agent.') +
-         '</p>' +
-       '</div>';
-
-  h += '<div class="sechead" style="margin-top:32px"><h3>This check, and the full scorecard</h3>' +
-       '<p>Same six areas, same weights, same formula. What differs is depth.</p></div>';
-  h += '<div class="vs">' +
-       '<div class="vscard"><h4>What this check gives you</h4><ul>' +
-         '<li>One question per area, answered in about two minutes</li>' +
-         '<li>A weighted score and a position you can take to a colleague</li>' +
-         '<li>The specific answers that put you there</li>' +
-       '</ul></div>' +
-       '<div class="vscard full"><h4>What the full scorecard adds</h4><ul>' +
-         '<li>Several questions per area rather than one, so a single answer cannot swing a category</li>' +
-         '<li>Workflow level detail, which is where exposure usually hides</li>' +
-         '<li>The agent by agent view this check cannot produce</li>' +
-       '</ul></div>' +
-     '</div>';
-  h += '<div class="ctalinks">' +
-         '<a class="ctalink" href="' + SCORECARD_URL + '" target="_blank" rel="noopener">Take the full scorecard</a>' +
-         '<a class="ctalink second" href="' + BOOK_URL + '" target="_blank" rel="noopener">Talk it through with us</a>' +
+  h += '<div class="closer" id="leadBox">' +
+         '<h3>Get your free consultation</h3>' +
+         '<p class="leadlede">We’ll walk through your results and put together a plan for your setup.</p>' +
+         '<form class="leadform" id="leadForm" novalidate>' +
+           '<label class="lf"><span>Name</span>' +
+             '<input id="leadName" type="text" autocomplete="name" placeholder="Your name"></label>' +
+           '<label class="lf"><span>Work email</span>' +
+             '<input id="leadEmail" type="email" autocomplete="email" placeholder="you@company.com"></label>' +
+           '<button class="cta sm" id="leadSend" type="submit">Request my consultation</button>' +
+         '</form>' +
+         '<p class="leaderr" id="leadErr" hidden></p>' +
+         '<p class="leadnote">Take part and you also get the anonymized industry report when it is published.</p>' +
        '</div>';
 
   h += '<div class="ctarow"><button class="cta ghost" id="btnRestart">Run it again</button></div>';
-  h += '<p class="footnote">Every line above comes from the seven answers given, scored with the same formula and the same weights as the full Agentic Security Readiness Scorecard. ' +
-       (CAPTURE ? 'Your answers are recorded without a name or an email address attached.' : 'Nothing on this page was sent anywhere.') + '</p>';
+  h += '<p class="footnote">Every line above comes from the answers you gave, scored with the same formula and the same weights as the full Agentic Security Readiness Scorecard. ' +
+       (CAPTURE ? 'Your answers were recorded without a name or an email address until you fill in the form above.' : 'Nothing on this page was sent anywhere.') + '</p>';
 
   $('scResult').innerHTML = h;
   show('scResult');
   paintMap(true);
   $('pgFill').style.width = '100%';
   $('btnRestart').addEventListener('click', restart);
+  wireLeadForm();
 
   $('mapFoot').innerHTML = 'You landed in <strong>' + esc(quad.name) + '</strong>, scoring <strong>' + score +
     ' out of 100</strong>. Visibility and governance ' + one(ax.y) + ', runtime control ' + one(ax.x) + ', both out of 5.';
@@ -858,18 +912,79 @@ function finish(){
       o[key] = a === null ? null : Math.round(a * 100) / 100;
       return o;
     }, {}),
-    answers: QS.filter(q => A[q.id] !== undefined).map(q => ({
+    answers: ACTIVE.filter(q => A[q.id] !== undefined).map(q => ({
       id:q.id, cat:q.cat, catName:CATS[q.cat].name, weight:CATS[q.cat].weight,
-      q:q.q, a:q.opts[A[q.id]].t, rating:Math.round(rating(A[q.id]) * 100) / 100
+      q:q.q, a:q.opts[A[q.id]].t, rating:Math.round(ratingFor(q, A[q.id]) * 100) / 100
     }))
   });
+}
+
+/* ============================================================
+   THE LEAD FORM
+   Work email only. The list below is the personal providers named in the
+   brief plus the aliases those providers also hand out, because someone
+   typing a personal address rarely picks the headline domain. The server
+   checks the same list again, since a check that only runs in the browser
+   is a suggestion rather than a rule.
+   ============================================================ */
+const PERSONAL_DOMAINS = [
+  'gmail.com','googlemail.com',
+  'yahoo.com','yahoo.co.uk','ymail.com','rocketmail.com',
+  'outlook.com','hotmail.com','hotmail.co.uk','live.com','live.co.uk','msn.com',
+  'icloud.com','me.com','mac.com',
+  'aol.com',
+  'proton.me','protonmail.com','pm.me'
+];
+function emailProblem(v){
+  const e = (v || '').trim().toLowerCase();
+  if(!e) return 'Please add your work email.';
+  if(!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(e)) return 'That does not look like an email address.';
+  const domain = e.split('@')[1];
+  if(PERSONAL_DOMAINS.indexOf(domain) > -1) return 'Please use your work email rather than a personal address.';
+  return null;
+}
+function wireLeadForm(){
+  const form = $('leadForm');
+  if(!form) return;
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('leadName').value.trim();
+    const email = $('leadEmail').value.trim();
+    const err = $('leadErr');
+    const problem = !name ? 'Please add your name.' : emailProblem(email);
+    if(problem){
+      err.textContent = problem;
+      err.hidden = false;
+      ($(!name ? 'leadName' : 'leadEmail')).focus();
+      return;
+    }
+    err.hidden = true;
+    sendContact(name, email);
+    /* The standalone copy of this page has nowhere to send a lead. Saying
+       "we will be in touch" there would be untrue, so it says what happened. */
+    $('leadBox').innerHTML = '<h3>Thank you, ' + esc(name.split(' ')[0]) + '</h3>' +
+      (CAPTURE
+        ? '<p class="leadlede">We will be in touch at ' + esc(email) + ' to set up your consultation and walk through these results.</p>' +
+          '<p class="leadnote">You will also get the anonymized industry report when it is published.</p>'
+        : '<p class="leadlede">This is a preview, so nothing was sent and no address was stored. On the live version this books your consultation.</p>');
+  });
+}
+function sendContact(name, email){
+  if(!CAPTURE) return;
+  if(location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  try{
+    fetch('/api/contact', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:recordId, ref:REF, name:name, email:email})}).catch(() => {});
+  }catch(e){}
 }
 
 function restart(){
   Object.keys(A).forEach(k => delete A[k]);
   EST.clear();
+  ACTIVE = [];
+  recordId = null;
   idx = 0; sent = false;
-  $('mapFoot').innerHTML = 'Two numbers place the dot. <strong>Visibility and governance</strong> averages inventory, action visibility, autonomy, data exposure and audit evidence. <strong>Runtime control</strong> averages the two enforcement questions. Seven questions moves it.';
+  $('mapFoot').innerHTML = 'Two numbers place the dot. <strong>Visibility and governance</strong> averages inventory, action visibility, autonomy, data exposure and audit evidence. <strong>Runtime control</strong> comes from policy enforcement. Your answers move it.';
   paintMap(false);
   show('scIntro');
 }
@@ -883,14 +998,16 @@ $('btnExitBack').addEventListener('click', () => { show('scEstate'); renderEstat
 $('btnEstNext').addEventListener('click', () => {
   if(EST.size === 0) return;
   if(EST.has('none')){ show('scExit'); return; }
+  buildActive();
+  Object.keys(A).forEach(k => { if(!ACTIVE.some(q => q.id === k)) delete A[k]; });
   idx = 0; show('scQ'); renderQ();
 });
 $('btnBack').addEventListener('click', back);
-$('btnNext').addEventListener('click', () => { if(!awaiting) advance(); });
+$('btnNext').addEventListener('click', advance);
 document.addEventListener('keydown', e => {
   if($('scQ').hidden) return;
   const n = parseInt(e.key, 10);
-  if(n >= 1 && n <= QS[idx].opts.length) pick(n - 1);
+  if(n >= 1 && n <= ACTIVE[idx].opts.length) pick(n - 1);
 });
 paintMap(false);
 </script>

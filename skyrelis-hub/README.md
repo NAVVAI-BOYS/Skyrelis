@@ -2,7 +2,7 @@
 
 Seven questions, one per area of the six category Agentic Security Readiness Scorecard, weighted exactly as the full assessment weights them. Built by Navvai, September 2026.
 
-## Brand colours, sampled from the logo
+## Brand colors, sampled from the logo
 
 The spec document gave a teal and navy palette. The supplied logo is blue and gold, and the logo is the authority, so the app was retoned to it.
 
@@ -13,7 +13,7 @@ The spec document gave a teal and navy palette. The supplied logo is blue and go
 | `--navy` | `#2C395C` | the navy dots in the square icon |
 | `--amber` (medium risk) | `#E7B844` | the gold path in the square icon |
 
-Gold stays bright in both themes because it is a fill that should match the wordmark. Amber is theme aware because it carries meaning as text and borders. Red stays a legibility lift of the spec alert colour.
+Gold stays bright in both themes because it is a fill that should match the wordmark. Amber is theme aware because it carries meaning as text and borders. Red stays a legibility lift of the spec alert color.
 
 ## What this is
 
@@ -94,8 +94,43 @@ Storage is deliberately never a startup dependency. If the disk is missing the a
 ## The flow
 
 1. **Before we score.** One unscored screen asking which kinds of agent they run: enterprise operated, platform based, vendor controlled, browser and endpoint, or none yet. This is the executive brief's own framework, which Dave flagged as missing from the first version. Choosing "none yet" ends the check politely, which also restores the qualifying step v1 had.
-2. **Seven questions**, one per scorecard category, runtime getting two.
-3. **The result.** Weighted score, band, category table, quadrant position, weakest answers, a scoring note for vendor run agents, this check versus the full scorecard, and the two calls to action.
+2. **Six or seven questions** (seven with vendor hosted agents, six without), one per scorecard category, runtime getting two. The vendor hosted question (Q6) is only asked when they said on the estate screen that they run agents inside a vendor product. Left in for everyone it cost a company with no vendor agents up to 15 points and a whole band for a risk they do not carry, with nothing on the page explaining where the points went.
+3. **The result.** Verdict, weighted score, band, category table, quadrant position, the gaps with one basic first step each, the two points worth raising on the call, and one offer.
+4. **The form.** Name and work email, personal addresses rejected. Nothing identifying is stored until this is submitted.
+
+## Answer scales
+
+Four options on every question, scoring 5, 3.667, 2.333, 1. Two questions were briefly on five options and were brought back to four: they made the check longer to read without making the score any sharper. The sensitive data question lost an option by merging two that described the same position from different angles, rather than by deleting an idea.
+
+The step is still worked out from the number of options on the question rather than hard wired, so putting a fifth option back somewhere will not break anything. Hard wiring the four option step was what once gave a fifth option a rating of -0.33 and a negative contribution to its category.
+
+Every question is listed best option first. Jaz's rewrites arrived worst first and were reversed so the whole check reads one way.
+
+## The token question lives on the result page
+
+It was briefly question 8, then question 7. It is now a note on the result page under "Worth checking before we speak", in Jaz's wording, shown to everyone.
+
+As a question it was one more thing to answer for a point better made than asked, and answering it honestly meant checking with whoever owns the billing. The check is a qualifier: one person should finish it alone in two minutes without asking a colleague. The question failed that test. The point still gets made, and the call is where it gets explored.
+
+Tool and action visibility, 15%, is carried by its own question (Q3, whether they can see which tools and systems their agents touched this week). That is the category as Dave's scorecard means it. It cannot be left without a question: the six weights total 100 and a category with no answer drops out of the sum, so an empty visibility capped the best possible score at 85 with no way to reach it.
+
+The `lens:true` flag and the code that honours it are still in place. No question uses it now. Setting it on a question asks and records that question without scoring it.
+
+## No auto advance
+
+Choosing an answer does not move the page. It used to advance 1150ms after a choice, which took the question away before anyone could read the rest of the options or change their mind. The page waits for Next.
+
+## Questions 5 to 7
+
+Jaz wrote the wording for questions 4, 5, 6 and 7 and it is used as written, with two changes: the option order is reversed, since her lists arrived worst first and the whole check reads best first, and question 4 lost an option when two of them were merged to bring every question to four.
+
+The line under each answer is Navvai's throughout, as is the wording of questions 1 to 3.
+
+Her rewrite of question 3 is not in the build. The question that carries Tool and action visibility is Navvai's, written to be answerable without asking a colleague. Worth telling her rather than letting her find it.
+
+## Work email only
+
+Personal addresses are rejected in the page and again in `app.py`, since a check that only runs in the browser is a suggestion rather than a rule. The list is the seven providers named in the brief plus the aliases those same providers hand out (googlemail, ymail, live, msn, me.com, mac.com, protonmail, pm.me). `PERSONAL_DOMAINS` appears in both files; change both.
 
 ## The URLs
 
@@ -104,7 +139,7 @@ Storage is deliberately never a startup dependency. If the disk is missing the a
 | `/` | The prospect. The check itself. |
 | `/?ref=acme-maya` | Same check, but the record gets labelled `acme-maya` |
 | `/ops?key=ADMIN_KEY` | Damarie. Every completion with the booking read. |
-| `/api/checks.csv?key=ADMIN_KEY` | Spreadsheet of all completions |
+| `/api/checks.csv?key=ADMIN_KEY` | Spreadsheet of all completions, name and work email included |
 | `/api/checks?key=ADMIN_KEY` | Raw JSON |
 | `/healthz` | Render health check |
 

@@ -9,6 +9,7 @@ ADMIN_KEY, computed here rather than in the browser.
 
 import os
 import io
+import re
 import logging
 import csv
 import json
@@ -122,6 +123,33 @@ def write_rows(rows):
     os.replace(tmp, STORE)
 
 
+# The personal providers named in the brief, plus the aliases those same
+# providers hand out. Mirrored in the page, and checked again here because a
+# check that only runs in the browser is a suggestion rather than a rule.
+PERSONAL_DOMAINS = {
+    "gmail.com", "googlemail.com",
+    "yahoo.com", "yahoo.co.uk", "ymail.com", "rocketmail.com",
+    "outlook.com", "hotmail.com", "hotmail.co.uk", "live.com", "live.co.uk", "msn.com",
+    "icloud.com", "me.com", "mac.com",
+    "aol.com",
+    "proton.me", "protonmail.com", "pm.me",
+}
+
+EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$")
+
+
+def email_problem(value):
+    """None when the address is usable, otherwise the line to show."""
+    email = (value or "").strip().lower()
+    if not email:
+        return "Please add your work email."
+    if not EMAIL_RE.match(email):
+        return "That does not look like an email address."
+    if email.split("@")[1] in PERSONAL_DOMAINS:
+        return "Please use your work email rather than a personal address."
+    return None
+
+
 def weak_label(weak):
     """The front end sends the weakest answers as category keys.
 
@@ -138,7 +166,14 @@ def weak_label(weak):
         names = [CAT_NAMES.get(str(k), str(k)) for k in weak]
     except TypeError:
         return str(weak)
-    names = [n for n in names if n]
+    # runtime carries two questions, so the same category can arrive twice.
+    # Keep the worst first order, drop the repeat.
+    seen, deduped = set(), []
+    for n in names:
+        if n and n not in seen:
+            seen.add(n)
+            deduped.append(n)
+    names = deduped
     if len(names) > 3:
         return ", ".join(names[:3]) + " and %d more" % (len(names) - 3)
     return ", ".join(names)
@@ -213,6 +248,8 @@ def api_check():
         "id": uuid.uuid4().hex[:12],
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "ref": str(body.get("ref") or "")[:80],
+        "name": "",
+        "email": "",
         "estate": body.get("estate") or [],
         "estate_names": body.get("estateNames") or [],
         "score": body.get("score"),
@@ -240,6 +277,46 @@ def api_check():
         row["ref"] or "-", row["score"], row["band"], row["quad_name"], r["verdict"],
     )
     return jsonify(ok=True, id=row["id"], stored=stored)
+
+
+@app.route("/api/contact", methods=["POST"])
+def api_contact():
+    """Attach a name and a work email to an answer set already stored.
+
+    The answers are recorded anonymously when the check finishes. This is the
+    only place a name or an address enters the record, and it only happens
+    when somebody fills in the form and asks for the consultation.
+    """
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name") or "").strip()[:120]
+    email = str(body.get("email") or "").strip()[:200]
+
+    if not name:
+        return jsonify(ok=False, error="Please add your name."), 400
+    problem = email_problem(email)
+    if problem:
+        return jsonify(ok=False, error=problem), 400
+
+    row_id = str(body.get("id") or "")
+    stored = False
+    try:
+        rows = read_rows()
+        for r in rows:
+            if r.get("id") == row_id:
+                r["name"] = name
+                r["email"] = email.lower()
+                r["contact_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+                stored = True
+                break
+        if stored:
+            write_rows(rows)
+    except Exception as e:
+        app.logger.warning("CONTACT not stored: %s", e)
+
+    # Log either way. Without a disk the row is gone but the lead is not.
+    app.logger.info("CONTACT ref=%s name=%s email=%s matched=%s",
+                    str(body.get("ref") or "-"), name, email.lower(), stored)
+    return jsonify(ok=True, stored=stored)
 
 
 def require_key():
@@ -274,7 +351,7 @@ def api_checks_csv():
     require_key()
     out = io.StringIO()
     w = csv.writer(out)
-    w.writerow(["at", "ref", "score", "band", "quadrant",
+    w.writerow(["at", "ref", "name", "email", "score", "band", "quadrant",
                 "visibility_governance_5", "runtime_control_5"]
                + [CAT_NAMES[c] for c in CAT_ORDER]
                + ["vendor_proof_gap", "slow_runtime", "verdict"])
@@ -282,7 +359,8 @@ def api_checks_csv():
         cats = r.get("cats") or {}
         rd = facilitator_read(r)
         w.writerow([
-            r.get("at", ""), r.get("ref", ""), r.get("score", ""),
+            r.get("at", ""), r.get("ref", ""),
+            r.get("name", ""), r.get("email", ""), r.get("score", ""),
             r.get("band", ""), r.get("quad_name", ""),
             r.get("y", ""), r.get("x", ""),
         ] + [cats.get(c, "") for c in CAT_ORDER]
