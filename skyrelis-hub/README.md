@@ -8,12 +8,16 @@ The spec document gave a teal and navy palette. The supplied logo is blue and go
 
 | Token | Value | Sampled from |
 |---|---|---|
-| `--teal` (primary accent) | `#47ABFF` | the blue mark in the lockup |
+| `--teal` (primary accent) | `#47ABFF` | the blue mark in the original lockup |
 | `--gold` (CTA fill) | `#F9C002` | the Skyrelis wordmark |
 | `--navy` | `#2C395C` | the navy dots in the square icon |
 | `--amber` (medium risk) | `#E7B844` | the gold path in the square icon |
 
 Gold stays bright in both themes because it is a fill that should match the wordmark. Amber is theme aware because it carries meaning as text and borders. Red stays a legibility lift of the spec alert color.
+
+**One thing to settle.** The mark supplied in October 2026 is gold and navy. The earlier one was blue and gold, and `--teal` was sampled from that blue mark. Teal is still the app's primary accent, on buttons, the quadrant and every link, so the new mark no longer has a colour in common with the interface around it.
+
+Nothing is broken by this and nothing was changed on the strength of one icon. But the choice is real: keep teal as the accent, in which case the mark is the only gold and navy thing on the page, or retone the app to the new mark and lose the blue. Worth asking Jaz and Dave which they intended.
 
 ## What this is
 
@@ -174,7 +178,9 @@ A strong signal is flagged separately: runtime enforcement slow **and** sensitiv
 
 ## Before this goes in front of real prospects
 
-- [x] **The logo is in.** Extracted from the supplied asset by alpha keying it off its black ground, so the antialiasing survives and nothing was redrawn. The lockup is the mark plus the wordmark with the tagline dropped, since a tagline does not belong in a 26px masthead. Embedded as base64 so there is no external request. The square icon asset is the favicon.
+- [x] **The logo is in,** updated to the mark supplied in October 2026. Extracted from the asset by alpha keying it off its dark ground, so the antialiasing survives and nothing was redrawn. The lockup is that mark plus the existing Skyrelis wordmark, with the tagline dropped, since a tagline does not belong in a 26px masthead. Embedded as base64 in both `index.html` and `ops.html`, so there is no external request and nothing to upload.
+
+  The mark's navy came off the asset at `#2A395B`, which is brand navy, so it was left alone. Its gold came off at `#E7B52B`, duller than the `#F9C002` of the wordmark it now sits beside. Since the navy survived clean, the gold was almost certainly lost to compression rather than redrawn, so it was pulled back to `#F9C002` with the per pixel shading kept. If that duller gold was deliberate, say so and it goes back.
 - [ ] **The typeface.** Still Archivo and Inter. If Skyrelis has a brand face, send it and it is a one line change.
 - [ ] **Confirm the two links.** `SCORECARD_URL` points at the ungated scorecard named in the memo. `BOOK_URL` is a guess and should be whatever Jaz wants, probably her Calendly.
 - [ ] **Sign off the question wording.** The categories, weights, formula and band names are Skyrelis's. The wording of the seven questions and the line under each answer is still Navvai's.
